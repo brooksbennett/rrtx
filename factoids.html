@@ -39,6 +39,13 @@
         body {
             -webkit-tap-highlight-color: transparent;
         }
+
+        /* Hide number input arrows */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
     </style>
 </head>
 <body class="bg-slate-50">
@@ -61,6 +68,9 @@
             const [activeTab, setActiveTab] = useState('overview');
             const [isMinorFundsOpen, setIsMinorFundsOpen] = useState(false);
             const [isMinorAgenciesOpen, setIsMinorAgenciesOpen] = useState(false);
+            
+            // Tax Calculator State
+            const [homeValue, setHomeValue] = useState(395240);
 
             const data = {
                 overview: {
@@ -137,16 +147,14 @@
                     { prop: "Prop B (Public Safety)", total: "$34M", yr25: "$0M", yr26: "$22M" }
                 ],
                 resident: {
-                    medianHomeValue: "$395,240",
-                    medianHouseTax: "$1,470",
-                    taxPerCapita: "$683",
-                    totalTaxRate: "$1.7993",
+                    medianHomeValue: 395240,
+                    propertyTaxRate: 0.3720,
                     taxBreakdown: [
-                        { entity: "City of Round Rock", rate: "$0.3720" },
-                        { entity: "Round Rock ISD", rate: "$0.8931" },
-                        { entity: "Williamson County", rate: "$0.4138" },
-                        { entity: "Austin Comm. College", rate: "$0.1034" },
-                        { entity: "Upper Brushy Creek", rate: "$0.0170" }
+                        { entity: "City of Round Rock", rate: 0.3720 },
+                        { entity: "Round Rock ISD", rate: 0.8931 },
+                        { entity: "Williamson County", rate: 0.4138 },
+                        { entity: "Austin Comm. College", rate: 0.1034 },
+                        { entity: "Upper Brushy Creek", rate: 0.0170 }
                     ],
                     utilities: {
                         total: "$109.52",
@@ -213,6 +221,25 @@
                 }
             };
 
+            // Calculate Interactive Taxes
+            const taxResults = useMemo(() => {
+                const cityRate = 0.3720;
+                const otherRate = data.resident.taxBreakdown
+                    .filter(item => item.entity !== "City of Round Rock")
+                    .reduce((sum, item) => sum + item.rate, 0);
+                
+                const cityTax = (homeValue / 100) * cityRate;
+                const otherTax = (homeValue / 100) * otherRate;
+                const totalRate = cityRate + otherRate;
+                
+                return {
+                    cityTax,
+                    otherTax,
+                    totalTax: cityTax + otherTax,
+                    totalRate: totalRate.toFixed(4)
+                };
+            }, [homeValue]);
+
             const NavButton = ({ id, icon, label }) => (
                 <button 
                     onClick={() => setActiveTab(id)}
@@ -225,9 +252,9 @@
                 </button>
             );
 
-            const DataRow = ({ label, value, subValue, highlight = false }) => (
-                <div className={`flex justify-between items-center py-3 border-b border-gray-50 last:border-0 ${highlight ? 'bg-blue-50/50 -mx-4 px-4' : ''}`}>
-                    <span className="text-sm text-gray-600">{label}</span>
+            const DataRow = ({ label, value, subValue, highlight = false, lowkey = false }) => (
+                <div className={`flex justify-between items-center py-3 border-b border-gray-50 last:border-0 ${highlight ? 'bg-blue-50/50 -mx-4 px-4' : ''} ${lowkey ? 'opacity-60' : ''}`}>
+                    <span className={`text-sm ${lowkey ? 'text-gray-500 italic' : 'text-gray-600'}`}>{label}</span>
                     <div className="text-right">
                         <span className={`text-sm font-bold ${highlight ? 'text-blue-700' : 'text-gray-900'}`}>{value}</span>
                         {subValue && <div className="text-[10px] text-gray-400 font-medium">{subValue}</div>}
@@ -241,6 +268,19 @@
                     {icon && <Icon name={icon} size={16} className={`text-${color}-400`} />}
                 </div>
             );
+
+            const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+            const formatNumber = (val) => new Intl.NumberFormat('en-US').format(val);
+
+            // Handle Input Change with Formatting
+            const handleHomeValueChange = (e) => {
+                const rawValue = e.target.value.replace(/,/g, '');
+                if (rawValue === '' || isNaN(rawValue)) {
+                    setHomeValue(0);
+                } else {
+                    setHomeValue(parseInt(rawValue, 10));
+                }
+            };
 
             return (
                 <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-24">
@@ -260,26 +300,63 @@
                     <main className="p-4 max-w-lg mx-auto space-y-6">
                         {activeTab === 'overview' && (
                             <div className="space-y-4 animate-in fade-in duration-500">
+                                {/* Summary Hierarchy: Budget, Tax Rate, Population, Bond Rating, Median Home Value */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                        <Icon name="users" className="text-blue-500 mb-2" size={20} />
+                                        <Icon name="wallet" className="text-emerald-500 mb-1" size={18} />
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Total Budget</p>
+                                        <p className="text-xl font-black">{data.overview.totalBudget}</p>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                        <Icon name="trending-up" className="text-indigo-500 mb-1" size={18} />
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Tax Rate</p>
+                                        <p className="text-xl font-black">{data.overview.propertyTaxRate}</p>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                        <Icon name="users" className="text-blue-500 mb-1" size={18} />
                                         <p className="text-[10px] font-bold text-slate-400 uppercase">Population</p>
                                         <p className="text-xl font-black">{data.overview.population}</p>
                                     </div>
                                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                        <Icon name="wallet" className="text-emerald-500 mb-2" size={20} />
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Total Budget</p>
-                                        <p className="text-xl font-black">{data.overview.totalBudget}</p>
+                                        <Icon name="shield" className="text-amber-500 mb-1" size={18} />
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Bond Rating</p>
+                                        <p className="text-xl font-black">{data.overview.bondRating}</p>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm col-span-2">
+                                        <Icon name="home" className="text-blue-600 mb-1" size={18} />
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Median Home Value</p>
+                                        <p className="text-xl font-black">{formatCurrency(data.resident.medianHomeValue)}</p>
                                     </div>
                                 </div>
 
+                                {/* Financial Highlights */}
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <SectionHeader title="Key Performance Indicators" icon="activity" />
-                                    <div className="p-4 space-y-1">
-                                        <DataRow label="Property Tax Rate" value={data.overview.propertyTaxRate} />
-                                        <DataRow label="Bond Rating (S&P)" value={data.overview.bondRating} />
-                                        <DataRow label="Total City FTEs" value={data.overview.totalFTEs} />
-                                        <DataRow label="TMRS Rate (2026)" value="17.52%" />
+                                    <SectionHeader title="Financial Snapshots" icon="bar-chart" color="emerald" />
+                                    <div className="p-4 space-y-0">
+                                        <DataRow label="General Fund Revenue" value="$180.9M" />
+                                        <DataRow label="Property Tax Revenue" value="$99.2M" />
+                                        <DataRow label="Sales Tax Revenue" value="$111.5M" />
+                                        <DataRow label="Taxable Property Value" value="$26.7B" />
+                                    </div>
+                                </section>
+
+                                {/* Resident & Utility Highlights */}
+                                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                    <SectionHeader title="Resident Indicators" icon="home" color="blue" />
+                                    <div className="p-4 space-y-0">
+                                        <DataRow label="Median Home Tax Bill" value="$1,470" subValue="City Portion Only" />
+                                        <DataRow label="Avg. Monthly Utility Bill" value={data.resident.utilities.total} />
+                                    </div>
+                                </section>
+
+                                {/* Operations & Safety Highlights */}
+                                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                    <SectionHeader title="Operations Brief" icon="shield" color="slate" />
+                                    <div className="p-4 space-y-0">
+                                        <DataRow label="Total City FTE Staff" value={data.overview.totalFTEs} />
+                                        <DataRow label="Police Workforce" value={data.ops.police.total} subValue={`${data.ops.police.cert} Certified`} />
+                                        <DataRow label="Fire Workforce" value={data.ops.fire.total} subValue={`${data.ops.fire.cert} Certified`} />
+                                        <DataRow label="FY26 Projected Permits" value="625" />
                                     </div>
                                 </section>
                             </div>
@@ -295,7 +372,7 @@
                                 </div>
 
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <SectionHeader title="FY 2026 Funds Breakdown" icon="pie-chart" color="emerald" />
+                                    <SectionHeader title="FY 2026 Finances Breakdown" icon="pie-chart" color="emerald" />
                                     <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex justify-between">
                                         <span className="text-[9px] font-black uppercase text-emerald-600">Major Funds {'>'} $20M</span>
                                         <span className="text-[9px] font-black uppercase text-emerald-600 text-right">Revenue / Expense</span>
@@ -409,7 +486,7 @@
                                     </div>
                                 </section>
 
-                                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+                                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                     <SectionHeader title="May 2023 Bond Authorization" icon="layers" color="amber" />
                                     <div className="p-2 space-y-2">
                                         {data.bondAuth.map((auth, i) => (
@@ -423,54 +500,99 @@
                                         ))}
                                     </div>
                                 </section>
+
+                                {/* Bond Rating */}
+                                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+                                    <SectionHeader title="Credit Rating" icon="shield" color="slate" />
+                                    <div className="p-6 text-center">
+                                        <p className="text-4xl font-black text-slate-900 mb-1">{data.overview.bondRating}</p>
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">S&P Global Ratings</p>
+                                    </div>
+                                </section>
                             </div>
                         )}
 
                         {activeTab === 'resident' && (
                             <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-                                <div className="bg-white rounded-2xl border-2 border-blue-600 p-5 shadow-sm">
-                                    <div className="flex items-center gap-2 mb-4 text-blue-600">
-                                        <Icon name="home" size={20} />
-                                        <h2 className="font-black uppercase text-sm tracking-tight">Median Household</h2>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Home Value</p>
-                                            <p className="text-xl font-black">{data.resident.medianHomeValue}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Annual Tax</p>
-                                            <p className="text-xl font-black">{data.resident.medianHouseTax}</p>
-                                        </div>
-                                    </div>
+                                {/* Total Population Banner */}
+                                <div className="bg-blue-900 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                                    <Icon name="users" className="absolute -right-4 -bottom-4 text-blue-800 opacity-50" size={120} />
+                                    <p className="text-blue-300 text-xs font-bold uppercase tracking-wider">Total Population</p>
+                                    <p className="text-4xl font-black mt-1">{data.overview.population}</p>
+                                    <p className="text-xs text-blue-400 mt-2 font-bold uppercase tracking-tight">City of Round Rock Registry</p>
                                 </div>
 
-                                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                                        <h3 className="text-xs font-black uppercase text-slate-500">Taxing Entities Breakdown</h3>
-                                        <Icon name="landmark" size={14} className="text-slate-400" />
+                                {/* Interactive Tax Calculator */}
+                                <div className="bg-white rounded-2xl border-2 border-blue-600 p-5 shadow-lg relative overflow-hidden">
+                                    <div className="flex items-center gap-2 mb-4 text-blue-600">
+                                        <Icon name="home" size={20} />
+                                        <h2 className="font-black uppercase text-sm tracking-tight">Tax Calculator</h2>
                                     </div>
-                                    <div className="p-4 space-y-1">
-                                        {data.resident.taxBreakdown.map((item, i) => (
+                                    
+                                    <div className="space-y-4 relative z-10">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Adjust Home Value</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                                <input 
+                                                    type="text" 
+                                                    value={formatNumber(homeValue)}
+                                                    onChange={handleHomeValueChange}
+                                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-3 pl-8 pr-4 text-xl font-black text-slate-900 focus:border-blue-500 outline-none transition-colors"
+                                                />
+                                            </div>
+                                            <input 
+                                                type="range" 
+                                                min="100000" 
+                                                max="2000000" 
+                                                step="5000" 
+                                                value={homeValue} 
+                                                onChange={(e) => setHomeValue(Number(e.target.value))}
+                                                className="w-full mt-4 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                            />
+                                        </div>
+
+                                        <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
+                                            <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                                                <p className="text-[9px] font-bold text-blue-600 uppercase">City Tax Portion</p>
+                                                <p className="text-lg font-black text-blue-900">{formatCurrency(taxResults.cityTax)}</p>
+                                                <p className="text-[8px] font-bold text-blue-400 mt-0.5">@ 0.3720 RATE</p>
+                                            </div>
+                                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">Total Bill Estimate</p>
+                                                <p className="text-lg font-black text-slate-900">{formatCurrency(taxResults.totalTax)}</p>
+                                                <p className="text-[8px] font-bold text-slate-400 mt-0.5">@ {taxResults.totalRate} RATE</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <Icon name="dollar-sign" className="absolute -right-4 -bottom-4 text-blue-50 opacity-10" size={120} strokeWidth={4} />
+                                </div>
+
+                                {/* TAXING ENTITIES WITH BETTER HEADER */}
+                                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                    <SectionHeader title="Taxing Entities Breakdown" icon="landmark" color="indigo" />
+                                    <div className="p-4 space-y-0">
+                                        <DataRow 
+                                            label="City of Round Rock" 
+                                            value={formatCurrency(taxResults.cityTax)} 
+                                            subValue="Rate: 0.3720"
+                                            highlight={true} 
+                                        />
+                                        {data.resident.taxBreakdown.filter(i => i.entity !== "City of Round Rock").map((item, i) => (
                                             <DataRow 
                                                 key={i} 
                                                 label={item.entity} 
-                                                value={item.rate} 
-                                                highlight={item.entity === "City of Round Rock"} 
+                                                value={formatCurrency((homeValue / 100) * item.rate)} 
+                                                subValue={`Rate: ${item.rate}`}
+                                                lowkey={true}
                                             />
                                         ))}
-                                        <div className="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center">
-                                            <span className="text-xs font-black uppercase text-slate-400">Total Tax Rate</span>
-                                            <span className="text-lg font-black text-blue-600">{data.resident.totalTaxRate}</span>
-                                        </div>
                                     </div>
                                 </section>
 
+                                {/* UTILITY RATE IMPACT WITH BETTER HEADER */}
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                                        <h3 className="text-xs font-black uppercase text-slate-500">Utility Rate Impact</h3>
-                                        <Icon name="droplets" size={14} className="text-blue-500" />
-                                    </div>
+                                    <SectionHeader title="Utility Rate Impact" icon="droplets" color="blue" />
                                     <div className="p-4">
                                         <div className="flex justify-between items-baseline mb-4">
                                             <span className="text-sm font-bold text-slate-600">Avg. Monthly Residential Bill</span>
@@ -485,11 +607,9 @@
                                     </div>
                                 </section>
 
+                                {/* WATER RATE TIERS */}
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="p-4 bg-blue-900 text-white flex justify-between items-center">
-                                        <h3 className="text-xs font-black uppercase tracking-widest">Water Rate Tiers</h3>
-                                        <Icon name="waves" size={16} className="text-blue-300" />
-                                    </div>
+                                    <SectionHeader title="Water Rate Tiers" icon="waves" color="blue" />
                                     <div className="p-4">
                                         <div className="mb-4">
                                             <p className="text-[10px] font-black text-blue-600 uppercase mb-2 tracking-wider">Residential Block Rates</p>
@@ -565,8 +685,16 @@
 
                         {activeTab === 'ops' && (
                             <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+                                {/* Total City FTE Banner */}
+                                <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl shadow-slate-100 relative overflow-hidden">
+                                    <Icon name="users" className="absolute -right-4 -bottom-4 text-slate-700 opacity-50" size={120} />
+                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total City Workforce</p>
+                                    <p className="text-4xl font-black mt-1">{data.overview.totalFTEs}</p>
+                                    <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-tight">Full-Time Equivalents (Includes Safety)</p>
+                                </div>
+
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <SectionHeader title="Public Safety Workforce" icon="shield" color="slate" />
+                                    <SectionHeader title="Public Safety Breakdown" icon="shield" color="slate" />
                                     <div className="p-4 grid grid-cols-2 gap-4">
                                         <div className="text-center p-3 rounded-xl bg-rose-50 border border-rose-100"><p className="text-[10px] font-bold text-rose-600 uppercase">Fire (Total)</p><p className="text-2xl font-black text-rose-700">{data.ops.fire.total}</p><p className="text-[9px] font-black text-rose-400">{data.ops.fire.cert} CERTIFIED</p></div>
                                         <div className="text-center p-3 rounded-xl bg-blue-50 border border-blue-100"><p className="text-[10px] font-bold text-blue-600 uppercase">Police (Total)</p><p className="text-2xl font-black text-blue-700">{data.ops.police.total}</p><p className="text-[9px] font-black text-blue-400">{data.ops.police.cert} CERTIFIED</p></div>
@@ -586,7 +714,7 @@
 
                     <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-slate-200 z-50 flex justify-around px-1 py-2 safe-area-bottom shadow-2xl">
                         <NavButton id="overview" icon="bar-chart" label="Summary" />
-                        <NavButton id="budgets" icon="pie-chart" label="Budgets" />
+                        <NavButton id="budgets" icon="pie-chart" label="Finances" />
                         <NavButton id="business" icon="briefcase" label="Business" />
                         <NavButton id="resident" icon="home" label="Resident" />
                         <NavButton id="ops" icon="shield" label="Ops" />
