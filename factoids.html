@@ -1,0 +1,554 @@
+import React, { useState } from 'react';
+import { 
+  BarChart, Wallet, Users, Building, Droplets, Shield, 
+  TrendingUp, Search, ChevronRight, Bell, CreditCard, 
+  Home, DollarSign, PieChart, Briefcase, Hotel, Landmark,
+  Layers, HelpingHand, Activity, ChevronDown, ChevronUp,
+  Waves
+} from 'lucide-react';
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isMinorFundsOpen, setIsMinorFundsOpen] = useState(false);
+  const [isMinorAgenciesOpen, setIsMinorAgenciesOpen] = useState(false);
+
+  const data = {
+    overview: {
+      population: "145,208",
+      totalBudget: "$789.7M",
+      propertyTaxRate: "0.372000",
+      bondRating: "AAA (S&P)",
+      totalFTEs: "1,233"
+    },
+    majorBudgets: [
+      { name: "General Fund", rev: "$180,875,500", exp: "$188,706,000" },
+      { name: "General Self Finance Cons.", rev: "$191,012,000", exp: "$193,364,300" },
+      { name: "Utility Fund", rev: "$108,970,500", exp: "$132,864,800" },
+      { name: "Type B Sales Tax", rev: "$90,430,500", exp: "$179,540,500" },
+      { name: "Debt Service", rev: "$37,323,300", exp: "$36,984,800" },
+      { name: "Health Fund", rev: "$21,291,200", exp: "$24,785,000" },
+    ],
+    minorBudgets: [
+      { name: "Innovation & Development", rev: "$15,764,000", exp: "$15,765,500" },
+      { name: "HOT Fund (7%)", rev: "$10,462,400", exp: "$9,099,700" },
+      { name: "Sports Center (2%)", rev: "$7,030,700", exp: "$10,543,900" },
+      { name: "Stormwater", rev: "$6,569,800", exp: "$9,327,300" },
+      { name: "Golf Fund", rev: "$4,473,100", exp: "$4,412,600" },
+      { name: "Roadway Impact", rev: "$2,831,800", exp: "$2,500,000" },
+      { name: "Multipurpose Complex", rev: "$1,563,000", exp: "$1,689,700" },
+      { name: "CDBG", rev: "$1,269,700", exp: "$1,269,700" },
+      { name: "Tree Replacement", rev: "$130,000", exp: "$1,937,000" },
+      { name: "Municipal Court", rev: "$87,000", exp: "$894,700" },
+      { name: "PEG", rev: "$164,600", exp: "$487,000" },
+      { name: "Park Improvement", rev: "$202,000", exp: "$175,000" },
+      { name: "Law Enforcement", rev: "$15,600", exp: "$158,000" },
+      { name: "Library Fund", rev: "$1,800", exp: "$1,800" },
+    ],
+    fundBalances: [
+      { name: "GF Beginning Balance", value: "$63,758,016" },
+      { name: "Concentration Risk Fund", value: "$10,700,000" },
+      { name: "Contingency", value: "$45,207,750" }
+    ],
+    bcrua: [
+      { phase: "Phase 1a", total: "$182M", corr: "$65M", mgd: "4.53" },
+      { phase: "Phase 1c", total: "$17M", corr: "$4.4M", mgd: "8.7" },
+      { phase: "Phase 1d/2", total: "$275.3M", corr: "$73.3M", mgd: "11.2" }
+    ],
+    cdbg: {
+      allocation: "$672,184",
+      socialServiceTotal: "$250,000",
+      majorAgencies: [
+        { name: "Wilco CAC", fund: "$65,000" },
+        { name: "Senior Access", fund: "$50,000" },
+        { name: "Hope Alliance", fund: "$40,000" },
+        { name: "Vol. Center (RRASC)", fund: "$35,000" },
+        { name: "Foundation Comm.", fund: "$15,000" }
+      ],
+      minorAgencies: [
+        { name: "Capital IDEA", fund: "$10,000" },
+        { name: "Sacred Heart Comm.", fund: "$10,000" },
+        { name: "SHP", fund: "$10,000" },
+        { name: "Rock Ride for Kids", fund: "$8,000" },
+        { name: "TX Bap. Children's", fund: "$5,000" },
+        { name: "Jails to Jobs", fund: "$2,000" }
+      ]
+    },
+    outstandingDebt: [
+      { type: "GOS & COs Bonds", issued: "$541.6M", o_s: "$405.9M" },
+      { type: "Utility System Bonds", issued: "$168.1M", o_s: "$131.1M" },
+      { type: "RRTEDC Sales Tax Bonds", issued: "$69.0M", o_s: "$62.1M" },
+      { type: "Limited Tax Notes", issued: "$17.0M", o_s: "$12.7M" },
+      { type: "HOT Revenue Bonds", issued: "$5.6M", o_s: "$5.3M" },
+      { type: "Stormwater System Bonds", issued: "$8.0M", o_s: "$4.5M" }
+    ],
+    debtSummary: { totalIssued: "$809.3M", totalOS: "$621.6M" },
+    bondAuth: [
+      { prop: "Prop A (Parks/Sports)", total: "$220M", yr25: "$90M", yr26: "$78M" },
+      { prop: "Prop B (Public Safety)", total: "$34M", yr25: "$0M", yr26: "$22M" }
+    ],
+    resident: {
+      medianHomeValue: "$395,240",
+      medianHouseTax: "$1,470",
+      taxPerCapita: "$683",
+      totalTaxRate: "$1.7993",
+      taxBreakdown: [
+        { entity: "City of Round Rock", rate: "$0.3720" },
+        { entity: "Round Rock ISD", rate: "$0.8931" },
+        { entity: "Williamson County", rate: "$0.4138" },
+        { entity: "Austin Comm. College", rate: "$0.1034" },
+        { entity: "Upper Brushy Creek", rate: "$0.0170" }
+      ],
+      utilities: {
+        total: "$109.52",
+        water: "$43.91",
+        waste: "$34.17",
+        trash: "$24.69",
+        storm: "$6.75"
+      },
+      waterBlockRates: [
+        { tier: "0 - 10,000 gal", rate: "$2.57" },
+        { tier: "10,001 - 18,000 gal", rate: "$3.63" },
+        { tier: "18,001 - 26,000 gal", rate: "$4.70" },
+        { tier: "26,001 - 34,000 gal", rate: "$7.04" },
+        { tier: "34,000+ gal", rate: "$7.96" }
+      ],
+      commercialWaterRate: "$3.02"
+    },
+    business: {
+      propertyTaxpayers: [
+        { name: "Kalahari Resort & Conv.", value: "$576.7M", share: "2.16%" },
+        { name: "Dell Computer Holdings", value: "$451.6M", share: "1.69%" },
+        { name: "CPG RR. LP (Outlets)", value: "$158.0M", share: "0.59%" },
+        { name: "CMF 15 Port (Colonial)", value: "$134.8M", share: "0.50%" },
+        { name: "TX Essential Housing", value: "$132.0M", share: "0.49%" },
+        { name: "Columbia/St. Davids", value: "$115.1M", share: "0.43%" },
+        { name: "Oncor Electric Delivery", value: "$99.8M", share: "0.37%" },
+        { name: "Stanmore Palm Valley", value: "$88.9M", share: "0.33%" },
+        { name: "BT-OH LLC", value: "$86.3M", share: "0.32%" },
+        { name: "La Frontera Improv.", value: "$86.0M", share: "0.32%" }
+      ],
+      employers: [
+        { name: "Dell, Inc.", count: "10,000" },
+        { name: "Round Rock ISD", count: "6,236" },
+        { name: "Kalahari Resorts", count: "1,830" },
+        { name: "City of Round Rock", count: "1,233" },
+        { name: "Airco Mechanical", count: "1,197" },
+        { name: "Baylor Scott & White", count: "1,000" },
+        { name: "UPS", count: "914" },
+        { name: "St. David's Medical Ctr.", count: "846" },
+        { name: "Ascension Seton WilCo", count: "708" },
+        { name: "Emerson Automation", count: "700" }
+      ],
+      hotels: [
+        { name: "Kalahari Resort", share: "49.9%", rooms: 975 },
+        { name: "Marriott Austin North", share: "5.9%", rooms: 295 },
+        { name: "Embassy Suites", share: "4.9%", rooms: 180 },
+        { name: "Hyatt Place", share: "2.5%", rooms: 138 },
+        { name: "Homewood Suites", share: "2.0%", rooms: 115 },
+        { name: "Home2Suites RR Med", share: "2.0%", rooms: 119 },
+        { name: "Element", share: "1.8%", rooms: 123 },
+        { name: "Hilton Garden Inn", share: "1.8%", rooms: 122 },
+        { name: "La Quinta Palm Valley", share: "1.7%", rooms: 99 },
+        { name: "Courtyard by Marriott", share: "1.6%", rooms: 113 }
+      ],
+      incentives: [
+        { name: "Dell", value: "$12.0M" },
+        { name: "Switch", value: "$338.4K" },
+        { name: "Bass Pro Shops", value: "$183.9K" }
+      ]
+    },
+    ops: {
+      fire: { total: 206, cert: 184 },
+      police: { total: 310, cert: 219 }
+    }
+  };
+
+  const NavButton = ({ id, icon: Icon, label }) => (
+    <button 
+      onClick={() => setActiveTab(id)}
+      className={`flex flex-col items-center justify-center w-full py-2 transition-colors ${
+        activeTab === id ? 'text-blue-600' : 'text-gray-400'
+      }`}
+    >
+      <Icon size={18} strokeWidth={activeTab === id ? 2.5 : 2} />
+      <span className={`text-[9px] mt-1 font-bold ${activeTab === id ? 'text-blue-600' : 'text-gray-500'}`}>{label}</span>
+    </button>
+  );
+
+  const DataRow = ({ label, value, subValue, highlight = false }) => (
+    <div className={`flex justify-between items-center py-3 border-b border-gray-50 last:border-0 ${highlight ? 'bg-blue-50/50 -mx-4 px-4' : ''}`}>
+      <span className="text-sm text-gray-600">{label}</span>
+      <div className="text-right">
+        <span className={`text-sm font-bold ${highlight ? 'text-blue-700' : 'text-gray-900'}`}>{value}</span>
+        {subValue && <div className="text-[10px] text-gray-400 font-medium">{subValue}</div>}
+      </div>
+    </div>
+  );
+
+  const SectionHeader = ({ title, icon: Icon, color = "slate" }) => (
+    <div className={`p-4 bg-${color}-900 text-white flex justify-between items-center`}>
+      <h2 className="text-xs font-black uppercase tracking-widest">{title}</h2>
+      {Icon && <Icon size={16} className={`text-${color}-400`} />}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-24">
+      <header className="sticky top-0 bg-white/90 backdrop-blur-md z-40 border-b border-slate-200 px-4 py-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight">ROUND ROCK <span className="text-blue-600">FY26</span></h1>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1">Executive Dashboard</p>
+          </div>
+          <div className="flex gap-2">
+            <div className="p-2 bg-slate-100 rounded-lg"><Search size={18} className="text-slate-600" /></div>
+            <div className="p-2 bg-slate-100 rounded-lg"><Bell size={18} className="text-slate-600" /></div>
+          </div>
+        </div>
+      </header>
+
+      <main className="p-4 max-w-lg mx-auto space-y-6">
+        {activeTab === 'overview' && (
+          <div className="space-y-4 animate-in fade-in duration-500">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <Users className="text-blue-500 mb-2" size={20} />
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Population</p>
+                <p className="text-xl font-black">{data.overview.population}</p>
+              </div>
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <Wallet className="text-emerald-500 mb-2" size={20} />
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Total Budget</p>
+                <p className="text-xl font-black">{data.overview.totalBudget}</p>
+              </div>
+            </div>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="Key Performance Indicators" icon={Activity} />
+              <div className="p-4 space-y-1">
+                <DataRow label="Property Tax Rate" value={data.overview.propertyTaxRate} />
+                <DataRow label="Bond Rating (S&P)" value={data.overview.bondRating} />
+                <DataRow label="Total City FTEs" value={data.overview.totalFTEs} />
+                <DataRow label="TMRS Rate (2026)" value="17.52%" />
+              </div>
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'budgets' && (
+          <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+            {/* Budget Sections Omitted for brevity, fully preserved in internal logic */}
+            <div className="bg-emerald-600 text-white p-6 rounded-3xl shadow-xl shadow-emerald-100 relative overflow-hidden">
+              <PieChart className="absolute -right-4 -bottom-4 text-emerald-500 opacity-50" size={120} />
+              <p className="text-emerald-100 text-xs font-bold uppercase tracking-wider">Total Combined Budget</p>
+              <p className="text-4xl font-black mt-1">{data.overview.totalBudget}</p>
+              <p className="text-xs text-emerald-100/80 mt-2">FY 2026 Proposed Revenues & Expenses</p>
+            </div>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="FY 2026 Funds Breakdown" icon={PieChart} color="emerald" />
+              <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex justify-between">
+                <span className="text-[9px] font-black uppercase text-emerald-600">Major Funds {'>'} $20M</span>
+                <span className="text-[9px] font-black uppercase text-emerald-600 text-right">Revenue / Expense</span>
+              </div>
+              <div className="p-4 pt-0">
+                {data.majorBudgets.map((fund, i) => (
+                  <div key={i} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
+                    <span className="text-sm font-bold text-slate-700">{fund.name}</span>
+                    <div className="text-right">
+                      <div className="text-sm font-black text-emerald-600">{fund.rev}</div>
+                      <div className="text-[10px] font-bold text-rose-500">{fund.exp}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setIsMinorFundsOpen(!isMinorFundsOpen)} className="w-full p-4 bg-slate-50 flex justify-between items-center border-t border-slate-200 hover:bg-slate-100 transition-colors">
+                <span className="text-xs font-black uppercase text-slate-500">Other Funds ({data.minorBudgets.length})</span>
+                {isMinorFundsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+              {isMinorFundsOpen && (
+                <div className="p-4 pt-0 bg-slate-50 animate-in fade-in zoom-in-95 duration-200">
+                  {data.minorBudgets.map((fund, i) => (
+                    <div key={i} className="flex justify-between items-center py-2 border-b border-slate-200 last:border-0">
+                      <span className="text-xs font-medium text-slate-600">{fund.name}</span>
+                      <div className="text-right">
+                        <div className="text-xs font-bold text-emerald-700">{fund.rev}</div>
+                        <div className="text-[9px] text-rose-400">{fund.exp}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="Fund Balance" icon={Wallet} color="blue" />
+              <div className="p-4 space-y-1">
+                {data.fundBalances.map((item, i) => (
+                  <DataRow key={i} label={item.name} value={item.value} />
+                ))}
+              </div>
+            </section>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="BCRUA Water Project" icon={Droplets} color="cyan" />
+              <div className="p-2">
+                {data.bcrua.map((phase, i) => (
+                  <div key={i} className="p-3 mb-2 bg-slate-50 rounded-xl border border-slate-100 last:mb-0">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-black text-slate-800">{phase.phase}</span>
+                      <span className="text-xs font-bold text-cyan-600">{phase.mgd} MGD (CORR)</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><p className="text-[9px] font-bold text-slate-400 uppercase">Total Debt</p><p className="text-sm font-black">{phase.total}</p></div>
+                      <div className="text-right"><p className="text-[9px] font-bold text-slate-400 uppercase">CORR Share</p><p className="text-sm font-black text-cyan-700">{phase.corr}</p></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="CDBG & Social Services" icon={HelpingHand} color="indigo" />
+              <div className="p-4 border-b border-slate-50">
+                <div className="flex justify-between mb-4">
+                  <div><p className="text-[9px] font-bold text-slate-400 uppercase">FY26 Allocation</p><p className="text-lg font-black text-indigo-700">{data.cdbg.allocation}</p></div>
+                  <div className="text-right"><p className="text-[9px] font-bold text-slate-400 uppercase">Service Funding</p><p className="text-lg font-black text-indigo-700">{data.cdbg.socialServiceTotal}</p></div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-1">Agencies Funding {'>'} $10K</p>
+                  {data.cdbg.majorAgencies.map((agency, i) => (
+                    <div key={i} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
+                      <span className="text-xs font-bold text-slate-600">{agency.name}</span>
+                      <span className="text-xs font-black text-indigo-700">{agency.fund}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button onClick={() => setIsMinorAgenciesOpen(!isMinorAgenciesOpen)} className="w-full p-4 bg-slate-50 flex justify-between items-center border-t border-slate-200 hover:bg-slate-100 transition-colors">
+                <span className="text-xs font-black uppercase text-slate-500">Other Agencies ({data.cdbg.minorAgencies.length})</span>
+                {isMinorAgenciesOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+              {isMinorAgenciesOpen && (
+                <div className="p-4 pt-0 bg-slate-50 animate-in fade-in zoom-in-95 duration-200">
+                  {data.cdbg.minorAgencies.map((agency, i) => (
+                    <div key={i} className="flex justify-between items-center py-2 border-b border-slate-200 last:border-0">
+                      <span className="text-xs font-medium text-slate-600">{agency.name}</span>
+                      <span className="text-xs font-bold text-indigo-500">{agency.fund}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <div className="bg-rose-600 text-white p-6 rounded-3xl shadow-xl shadow-rose-100 relative overflow-hidden">
+              <CreditCard className="absolute -right-4 -bottom-4 text-rose-500 opacity-50" size={120} />
+              <p className="text-rose-100 text-xs font-bold uppercase tracking-wider">Total Outstanding Debt</p>
+              <p className="text-4xl font-black mt-1">{data.debtSummary.totalOS}</p>
+              <p className="text-xs text-rose-100/80 mt-2">Of {data.debtSummary.totalIssued} Total Issued</p>
+            </div>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="Itemized Debt Categories" icon={CreditCard} color="rose" />
+              <div className="p-4 pt-0">
+                {data.outstandingDebt.map((debt, i) => (
+                  <div key={i} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
+                    <span className="text-sm font-bold text-slate-700">{debt.type}</span>
+                    <div className="text-right"><span className="text-sm font-black text-rose-700">{debt.o_s}</span><div className="text-[9px] font-bold text-slate-400">of {debt.issued} issued</div></div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+              <SectionHeader title="May 2023 Bond Authorization" icon={Layers} color="amber" />
+              <div className="p-2 space-y-2">
+                {data.bondAuth.map((auth, i) => (
+                  <div key={i} className="p-4 bg-amber-50/50 rounded-xl border border-amber-100">
+                    <div className="flex justify-between items-start mb-3"><span className="text-sm font-black text-amber-900 leading-tight">{auth.prop}</span><span className="text-sm font-black bg-amber-200 text-amber-900 px-2 py-0.5 rounded-lg">{auth.total}</span></div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><p className="text-[9px] font-bold text-amber-600 uppercase">2025 Planned</p><p className="text-base font-black text-slate-800">{auth.yr25}</p></div>
+                      <div className="text-right"><p className="text-[9px] font-bold text-amber-600 uppercase">2026 Planned</p><p className="text-base font-black text-slate-800">{auth.yr26}</p></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'resident' && (
+          <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+            {/* Median Household */}
+            <div className="bg-white rounded-2xl border-2 border-blue-600 p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4 text-blue-600">
+                <Home size={20} />
+                <h2 className="font-black uppercase text-sm tracking-tight">Median Household</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Home Value</p>
+                  <p className="text-xl font-black">{data.resident.medianHomeValue}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Annual Tax</p>
+                  <p className="text-xl font-black">{data.resident.medianHouseTax}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Taxing Entities - NEW SECTION UNDER MEDIAN HH */}
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                <h3 className="text-xs font-black uppercase text-slate-500">Taxing Entities Breakdown</h3>
+                <Landmark size={14} className="text-slate-400" />
+              </div>
+              <div className="p-4 space-y-1">
+                {data.resident.taxBreakdown.map((item, i) => (
+                  <DataRow 
+                    key={i} 
+                    label={item.entity} 
+                    value={item.rate} 
+                    highlight={item.entity === "City of Round Rock"} 
+                  />
+                ))}
+                <div className="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center">
+                  <span className="text-xs font-black uppercase text-slate-400">Total Tax Rate</span>
+                  <span className="text-lg font-black text-blue-600">{data.resident.totalTaxRate}</span>
+                </div>
+              </div>
+            </section>
+
+            {/* Utility Rate Impact */}
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                <h3 className="text-xs font-black uppercase text-slate-500">Utility Rate Impact</h3>
+                <Droplets size={14} className="text-blue-500" />
+              </div>
+              <div className="p-4">
+                <div className="flex justify-between items-baseline mb-4">
+                  <span className="text-sm font-bold text-slate-600">Avg. Monthly Residential Bill</span>
+                  <span className="text-2xl font-black text-blue-600">{data.resident.utilities.total}</span>
+                </div>
+                <div className="space-y-2">
+                  <DataRow label="Water (Base + 10k gal)" value={data.resident.utilities.water} />
+                  <DataRow label="Wastewater (6k gal)" value={data.resident.utilities.waste} />
+                  <DataRow label="Solid Waste (incl. tax)" value={data.resident.utilities.trash} />
+                  <DataRow label="Stormwater Fee" value={data.resident.utilities.storm} />
+                </div>
+              </div>
+            </section>
+
+            {/* Water Block Rates - NEW SECTION BELOW UTILITY IMPACT */}
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 bg-blue-900 text-white flex justify-between items-center">
+                <h3 className="text-xs font-black uppercase tracking-widest">Water Rate Tiers</h3>
+                <Waves size={16} className="text-blue-300" />
+              </div>
+              <div className="p-4">
+                <div className="mb-4">
+                  <p className="text-[10px] font-black text-blue-600 uppercase mb-2 tracking-wider">Residential Block Rates</p>
+                  <div className="space-y-1">
+                    {data.resident.waterBlockRates.map((block, i) => (
+                      <div key={i} className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
+                        <span className="text-sm text-slate-600">{block.tier}</span>
+                        <span className="text-sm font-black text-slate-900">{block.rate}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Commercial Rate - Highlighted non-discreetly */}
+                <div className="mt-4 p-4 bg-amber-50 rounded-xl border border-amber-100 flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-wider">Commercial Water Rate</p>
+                    <p className="text-xs font-medium text-amber-800">Flat rate for all usage</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-black text-amber-700">{data.resident.commercialWaterRate}</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'business' && (
+          <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="Top 10 Property Taxpayers" icon={Landmark} color="indigo" />
+              <div className="p-2">
+                <div className="px-2 py-2 flex justify-between text-[10px] font-black uppercase text-slate-400"><span>Entity Name</span><span>Assessed Value / %</span></div>
+                {data.business.propertyTaxpayers.map((taxpayer, i) => (
+                  <div key={i} className="flex justify-between items-center px-2 py-3 border-b border-slate-50 last:border-0">
+                    <div className="flex items-center gap-3 max-w-[60%]"><span className="text-[10px] font-black text-slate-300 w-4 text-center">{i+1}</span><span className="text-sm font-bold text-slate-700 truncate">{taxpayer.name}</span></div>
+                    <div className="text-right"><span className="text-sm font-black text-indigo-700">{taxpayer.value}</span><div className="text-[10px] font-bold text-slate-400">{taxpayer.share} of AV</div></div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="Top 10 Employers" icon={Briefcase} color="blue" />
+              <div className="p-2">
+                {data.business.employers.map((emp, i) => (
+                  <div key={i} className="flex justify-between items-center px-2 py-3 border-b border-slate-50 last:border-0"><div className="flex items-center gap-3"><span className="text-[10px] font-black text-slate-300 w-4 text-center">{i+1}</span><span className="text-sm font-bold text-slate-700">{emp.name}</span></div><span className="text-sm font-mono font-black text-blue-600">{emp.count}</span></div>
+                ))}
+              </div>
+            </section>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="Top 10 Hotel Taxpayers" icon={Hotel} color="amber" />
+              <div className="p-2">
+                <div className="px-2 py-2 flex justify-between text-[10px] font-black uppercase text-slate-400"><span>Hotel Name</span><span>Share / Rooms</span></div>
+                {data.business.hotels.map((hotel, i) => (
+                  <div key={i} className="flex justify-between items-center px-2 py-3 border-b border-slate-50 last:border-0"><span className="text-sm font-bold text-slate-700 truncate mr-4">{hotel.name}</span><div className="text-right flex-shrink-0"><span className="text-sm font-black text-amber-700">{hotel.share}</span><div className="text-[9px] font-bold text-slate-400">{hotel.rooms} Rooms</div></div></div>
+                ))}
+                <div className="p-3 bg-slate-50 text-center border-t border-slate-100"><p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Total Hotel Rooms: 4,957</p></div>
+              </div>
+            </section>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="Sales Tax Incentives" icon={TrendingUp} color="emerald" />
+              <div className="p-4 space-y-2">
+                {data.business.incentives.map((inc, i) => (
+                  <div key={i} className="flex justify-between items-center p-3 bg-emerald-50 rounded-xl border border-emerald-100"><span className="text-sm font-black text-emerald-900 uppercase tracking-tighter">{inc.name}</span><span className="text-lg font-black text-emerald-700">{inc.value}</span></div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'ops' && (
+          <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+             <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <SectionHeader title="Public Safety Workforce" icon={Shield} color="slate" />
+              <div className="p-4 grid grid-cols-2 gap-4">
+                <div className="text-center p-3 rounded-xl bg-rose-50 border border-rose-100"><p className="text-[10px] font-bold text-rose-600 uppercase">Fire (Total)</p><p className="text-2xl font-black text-rose-700">{data.ops.fire.total}</p><p className="text-[9px] font-black text-rose-400">{data.ops.fire.cert} CERTIFIED</p></div>
+                <div className="text-center p-3 rounded-xl bg-blue-50 border border-blue-100"><p className="text-[10px] font-bold text-blue-600 uppercase">Police (Total)</p><p className="text-2xl font-black text-blue-700">{data.ops.police.total}</p><p className="text-[9px] font-black text-blue-400">{data.ops.police.cert} CERTIFIED</p></div>
+              </div>
+            </section>
+
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+              <h3 className="text-xs font-black uppercase text-slate-400 mb-3 flex items-center gap-2"><Building size={14} /> Development Activity</h3>
+              <DataRow label="Projected FY26 Permits" value="625" subValue="New Residential" />
+              <DataRow label="FY26 Commercial Value" value="$350M" />
+              <DataRow label="FY25 Actual Permits" value="685" />
+              <DataRow label="FY25 Commercial Value" value="$886M" />
+            </section>
+          </div>
+        )}
+      </main>
+
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-slate-200 z-50 flex justify-around px-1 py-2 safe-area-bottom shadow-2xl">
+        <NavButton id="overview" icon={BarChart} label="Summary" />
+        <NavButton id="budgets" icon={PieChart} label="Budgets" />
+        <NavButton id="business" icon={Briefcase} label="Business" />
+        <NavButton id="resident" icon={Home} label="Resident" />
+        <NavButton id="ops" icon={Shield} label="Ops" />
+      </nav>
+    </div>
+  );
+};
+
+export default App;
