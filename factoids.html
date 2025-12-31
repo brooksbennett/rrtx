@@ -24,12 +24,17 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
         .animate-in {
             animation-duration: 0.5s;
             animation-fill-mode: both;
         }
         .fade-in { animation-name: fadeIn; }
         .slide-in-from-bottom-4 { animation-name: slideInUp; }
+        .scale-in { animation-name: scaleIn; animation-duration: 0.2s; }
         
         /* Mobile Safe Areas */
         .safe-area-bottom {
@@ -52,7 +57,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         // Mocking Lucide-React components since we're in a single HTML file environment
         const Icon = ({ name, size = 18, strokeWidth = 2, className = "" }) => {
@@ -68,6 +73,9 @@
             const [activeTab, setActiveTab] = useState('overview');
             const [isMinorFundsOpen, setIsMinorFundsOpen] = useState(false);
             const [isMinorAgenciesOpen, setIsMinorAgenciesOpen] = useState(false);
+            const [isSearchOpen, setIsSearchOpen] = useState(false);
+            const [searchQuery, setSearchQuery] = useState('');
+            const searchInputRef = useRef(null);
             
             // Tax Calculator State
             const [homeValue, setHomeValue] = useState(395240);
@@ -221,6 +229,43 @@
                 }
             };
 
+            // Flatten data for global search
+            const searchableItems = useMemo(() => {
+                const items = [];
+                // Budgets
+                data.majorBudgets.forEach(b => items.push({ label: b.name, value: b.rev, category: 'Finances', tab: 'budgets' }));
+                data.minorBudgets.forEach(b => items.push({ label: b.name, value: b.rev, category: 'Finances', tab: 'budgets' }));
+                // Employers
+                data.business.employers.forEach(e => items.push({ label: e.name, value: e.count, category: 'Business', tab: 'business' }));
+                // Hotels
+                data.business.hotels.forEach(h => items.push({ label: h.name, value: h.share, category: 'Hotels', tab: 'business' }));
+                // Taxpayers
+                data.business.propertyTaxpayers.forEach(t => items.push({ label: t.name, value: t.value, category: 'Taxpayers', tab: 'business' }));
+                // Agencies
+                data.cdbg.majorAgencies.forEach(a => items.push({ label: a.name, value: a.fund, category: 'Social Services', tab: 'budgets' }));
+                // Utilities
+                items.push({ label: 'Avg Utility Bill', value: data.resident.utilities.total, category: 'Resident', tab: 'resident' });
+                // Debt
+                data.outstandingDebt.forEach(d => items.push({ label: d.type, value: d.o_s, category: 'Debt', tab: 'budgets' }));
+                
+                return items;
+            }, [data]);
+
+            const filteredResults = useMemo(() => {
+                if (!searchQuery.trim()) return [];
+                return searchableItems.filter(item => 
+                    item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    item.category.toLowerCase().includes(searchQuery.toLowerCase())
+                ).slice(0, 10);
+            }, [searchQuery, searchableItems]);
+
+            // Auto-focus search input
+            useEffect(() => {
+                if (isSearchOpen && searchInputRef.current) {
+                    searchInputRef.current.focus();
+                }
+            }, [isSearchOpen]);
+
             // Calculate Interactive Taxes
             const taxResults = useMemo(() => {
                 const cityRate = 0.3720;
@@ -272,7 +317,6 @@
             const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
             const formatNumber = (val) => new Intl.NumberFormat('en-US').format(val);
 
-            // Handle Input Change with Formatting
             const handleHomeValueChange = (e) => {
                 const rawValue = e.target.value.replace(/,/g, '');
                 if (rawValue === '' || isNaN(rawValue)) {
@@ -283,7 +327,61 @@
             };
 
             return (
-                <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-24">
+                <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-24 relative">
+                    {/* Search Overlay */}
+                    {isSearchOpen && (
+                        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm p-4 flex flex-col items-center">
+                            <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in scale-in">
+                                <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+                                    <Icon name="search" size={20} className="text-slate-400" />
+                                    <input 
+                                        ref={searchInputRef}
+                                        type="text" 
+                                        placeholder="Search funds, employers, rates..."
+                                        className="flex-1 text-base font-bold text-slate-800 outline-none"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                    <button onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }} className="p-2 bg-slate-100 rounded-full">
+                                        <Icon name="x" size={16} className="text-slate-500" />
+                                    </button>
+                                </div>
+                                <div className="max-h-[60vh] overflow-y-auto p-2">
+                                    {filteredResults.length > 0 ? (
+                                        filteredResults.map((item, i) => (
+                                            <button 
+                                                key={i}
+                                                onClick={() => {
+                                                    setActiveTab(item.tab);
+                                                    setIsSearchOpen(false);
+                                                    setSearchQuery('');
+                                                    if (item.label === 'CDBG' || item.category === 'Social Services') setIsMinorAgenciesOpen(true);
+                                                    if (item.tab === 'budgets') setIsMinorFundsOpen(true);
+                                                }}
+                                                className="w-full flex justify-between items-center p-3 hover:bg-slate-50 rounded-2xl transition-colors text-left"
+                                            >
+                                                <div>
+                                                    <p className="text-sm font-black text-slate-800">{item.label}</p>
+                                                    <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">{item.category}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-mono font-black text-slate-900">{item.value}</p>
+                                                </div>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="p-8 text-center">
+                                            <Icon name="database" size={32} className="mx-auto text-slate-200 mb-2" />
+                                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+                                                {searchQuery ? "No factoids found" : "Type to find data points"}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <header className="sticky top-0 bg-white/90 backdrop-blur-md z-40 border-b border-slate-200 px-4 py-4">
                         <div className="flex justify-between items-center">
                             <div>
@@ -291,8 +389,12 @@
                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1">Quick Factoids</p>
                             </div>
                             <div className="flex gap-2">
-                                <div className="p-2 bg-slate-100 rounded-lg"><Icon name="search" size={18} className="text-slate-600" /></div>
-                                <div className="p-2 bg-slate-100 rounded-lg"><Icon name="bell" size={18} className="text-slate-600" /></div>
+                                <button 
+                                    onClick={() => setIsSearchOpen(true)}
+                                    className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                                >
+                                    <Icon name="search" size={18} className="text-slate-600" />
+                                </button>
                             </div>
                         </div>
                     </header>
@@ -300,7 +402,6 @@
                     <main className="p-4 max-w-lg mx-auto space-y-6">
                         {activeTab === 'overview' && (
                             <div className="space-y-4 animate-in fade-in duration-500">
-                                {/* Summary Hierarchy: Budget, Tax Rate, Population, Bond Rating, Median Home Value */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                                         <Icon name="wallet" className="text-emerald-500 mb-1" size={18} />
@@ -329,7 +430,6 @@
                                     </div>
                                 </div>
 
-                                {/* Financial Highlights */}
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                     <SectionHeader title="Financial Snapshots" icon="bar-chart" color="emerald" />
                                     <div className="p-4 space-y-0">
@@ -340,7 +440,6 @@
                                     </div>
                                 </section>
 
-                                {/* Resident & Utility Highlights */}
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                     <SectionHeader title="Resident Indicators" icon="home" color="blue" />
                                     <div className="p-4 space-y-0">
@@ -349,7 +448,6 @@
                                     </div>
                                 </section>
 
-                                {/* Operations & Safety Highlights */}
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                     <SectionHeader title="Operations Brief" icon="shield" color="slate" />
                                     <div className="p-4 space-y-0">
@@ -501,7 +599,6 @@
                                     </div>
                                 </section>
 
-                                {/* Bond Rating */}
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
                                     <SectionHeader title="Credit Rating" icon="shield" color="slate" />
                                     <div className="p-6 text-center">
@@ -514,7 +611,6 @@
 
                         {activeTab === 'resident' && (
                             <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-                                {/* Total Population Banner */}
                                 <div className="bg-blue-900 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden">
                                     <Icon name="users" className="absolute -right-4 -bottom-4 text-blue-800 opacity-50" size={120} />
                                     <p className="text-blue-300 text-xs font-bold uppercase tracking-wider">Total Population</p>
@@ -522,7 +618,6 @@
                                     <p className="text-xs text-blue-400 mt-2 font-bold uppercase tracking-tight">City of Round Rock Registry</p>
                                 </div>
 
-                                {/* Interactive Tax Calculator */}
                                 <div className="bg-white rounded-2xl border-2 border-blue-600 p-5 shadow-lg relative overflow-hidden">
                                     <div className="flex items-center gap-2 mb-4 text-blue-600">
                                         <Icon name="home" size={20} />
@@ -568,7 +663,6 @@
                                     <Icon name="dollar-sign" className="absolute -right-4 -bottom-4 text-blue-50 opacity-10" size={120} strokeWidth={4} />
                                 </div>
 
-                                {/* TAXING ENTITIES WITH BETTER HEADER */}
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                     <SectionHeader title="Taxing Entities Breakdown" icon="landmark" color="indigo" />
                                     <div className="p-4 space-y-0">
@@ -590,7 +684,6 @@
                                     </div>
                                 </section>
 
-                                {/* UTILITY RATE IMPACT WITH BETTER HEADER */}
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                     <SectionHeader title="Utility Rate Impact" icon="droplets" color="blue" />
                                     <div className="p-4">
@@ -607,7 +700,6 @@
                                     </div>
                                 </section>
 
-                                {/* WATER RATE TIERS */}
                                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                     <SectionHeader title="Water Rate Tiers" icon="waves" color="blue" />
                                     <div className="p-4">
@@ -685,7 +777,6 @@
 
                         {activeTab === 'ops' && (
                             <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-                                {/* Total City FTE Banner */}
                                 <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl shadow-slate-100 relative overflow-hidden">
                                     <Icon name="users" className="absolute -right-4 -bottom-4 text-slate-700 opacity-50" size={120} />
                                     <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total City Workforce</p>
