@@ -29,7 +29,7 @@
             background: #ecfdf5;
         }
         .glass-panel {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.92);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.6);
@@ -79,79 +79,91 @@
         .nav-arrow:hover {
             background-color: #f0fdf4;
         }
+
+        /* Responsive UI Toggles */
+        @media (max-width: 768px) {
+            .mobile-hidden { display: none !important; }
+            .mobile-expanded { height: calc(100vh - 12rem) !important; }
+        }
     </style>
 </head>
 <body class="bg-emerald-50/30">
 
-    <!-- Sidebar UI -->
-    <div class="fixed top-6 left-6 z-50 w-full max-w-[380px] h-[calc(100vh-3rem)] flex flex-col pointer-events-none">
+    <!-- Sidebar UI Container -->
+    <div class="fixed top-4 left-4 right-4 md:right-auto z-50 md:w-[380px] h-auto md:h-[calc(100vh-3rem)] flex flex-col pointer-events-none md:top-6 md:left-6">
         
         <!-- Header & Search -->
-        <header class="glass-panel p-6 rounded-[2.5rem] mb-4 pointer-events-auto">
-            <div class="flex items-center gap-4 mb-5">
-                <div class="bg-emerald-600 p-3 rounded-2xl text-white shadow-xl shadow-emerald-200">
-                    <i data-lucide="trees" size="24"></i>
+        <header class="glass-panel p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] mb-3 md:mb-4 pointer-events-auto">
+            <div class="flex items-center justify-between mb-4 md:mb-5">
+                <div class="flex items-center gap-3 md:gap-4">
+                    <div class="bg-emerald-600 p-2 md:p-3 rounded-xl md:rounded-2xl text-white shadow-xl shadow-emerald-200">
+                        <i data-lucide="trees" size="20" class="md:w-6 md:h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base md:text-xl font-extrabold text-slate-900 tracking-tight leading-none">Parks Explorer</h1>
+                        <p class="text-[9px] md:text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em] mt-1">Round Rock, Texas</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-xl font-extrabold text-slate-900 tracking-tight leading-none">Parks Explorer</h1>
-                    <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em] mt-1">Round Rock, Texas</p>
-                </div>
+                <!-- Mobile Toggle Button -->
+                <button id="mobileMenuToggle" class="md:hidden bg-emerald-50 text-emerald-600 p-2 rounded-xl transition-colors active:bg-emerald-100">
+                    <i data-lucide="menu" id="toggleIcon"></i>
+                </button>
             </div>
 
             <!-- Search Bar -->
-            <div class="relative mb-5 flex items-center">
+            <div class="relative mb-4 md:mb-5 flex items-center">
                 <div class="absolute left-4 flex items-center justify-center text-slate-400 pointer-events-none">
-                    <i data-lucide="search" size="18"></i>
+                    <i data-lucide="search" size="16"></i>
                 </div>
                 <input type="text" id="parkSearch" placeholder="Find a park..." 
-                       class="w-full pl-11 pr-4 py-3.5 bg-white/80 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all shadow-inner text-sm font-medium leading-none">
+                       class="w-full pl-10 pr-4 py-3 bg-white/80 border border-slate-100 rounded-xl md:rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all shadow-inner text-sm font-medium leading-none">
             </div>
 
             <!-- Amenity Filter Bar -->
             <div class="filter-container group">
-                <button onclick="scrollFilters(-100)" class="nav-arrow absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/95 p-1.5 rounded-full shadow-md text-emerald-600 border border-emerald-100 -ml-2">
+                <button onclick="scrollFilters(-100)" class="nav-arrow absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/95 p-1.5 rounded-full shadow-md text-emerald-600 border border-emerald-100 -ml-2 mobile-hidden">
                     <i data-lucide="chevron-left" size="14"></i>
                 </button>
-                <button onclick="scrollFilters(100)" class="nav-arrow absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/95 p-1.5 rounded-full shadow-md text-emerald-600 border border-emerald-100 -mr-2">
+                <button onclick="scrollFilters(100)" class="nav-arrow absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/95 p-1.5 rounded-full shadow-md text-emerald-600 border border-emerald-100 -mr-2 mobile-hidden">
                     <i data-lucide="chevron-right" size="14"></i>
                 </button>
 
-                <div id="filterList" class="flex overflow-x-auto gap-2 pb-2 px-1 no-scrollbar scroll-smooth">
-                    <div onclick="toggleAmenity('RESTROOM', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
-                        <i data-lucide="bath" size="14"></i> Restrooms
+                <div id="filterList" class="flex overflow-x-auto gap-2 pb-1 px-1 no-scrollbar scroll-smooth">
+                    <div onclick="toggleAmenity('RESTROOM', this)" class="amenity-chip px-3 py-2 md:px-4 md:py-2 bg-white border border-slate-100 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="bath" size="12" class="md:w-3.5 md:h-3.5"></i> Restrooms
                     </div>
-                    <div onclick="toggleAmenity('PLAYSCAPE', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
-                        <i data-lucide="baby" size="14"></i> Play
+                    <div onclick="toggleAmenity('PLAYSCAPE', this)" class="amenity-chip px-3 py-2 md:px-4 md:py-2 bg-white border border-slate-100 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="baby" size="12" class="md:w-3.5 md:h-3.5"></i> Play
                     </div>
-                    <div onclick="toggleAmenity('LIGHTED', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
-                        <i data-lucide="sun" size="14"></i> Lights
+                    <div onclick="toggleAmenity('LIGHTED', this)" class="amenity-chip px-3 py-2 md:px-4 md:py-2 bg-white border border-slate-100 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="sun" size="12" class="md:w-3.5 md:h-3.5"></i> Lights
                     </div>
-                    <div onclick="toggleAmenity('DRINKING_FOUNTAINS', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
-                        <i data-lucide="droplets" size="14"></i> Water
+                    <div onclick="toggleAmenity('DRINKING_FOUNTAINS', this)" class="amenity-chip px-3 py-2 md:px-4 md:py-2 bg-white border border-slate-100 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="droplets" size="12" class="md:w-3.5 md:h-3.5"></i> Water
                     </div>
-                    <div onclick="toggleAmenity('PLAY_COURT', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
-                        <i data-lucide="basketball" size="14"></i> Courts
+                    <div onclick="toggleAmenity('PLAY_COURT', this)" class="amenity-chip px-3 py-2 md:px-4 md:py-2 bg-white border border-slate-100 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="basketball" size="12" class="md:w-3.5 md:h-3.5"></i> Courts
                     </div>
-                    <div onclick="toggleAmenity('PLAY_FIELDS', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
-                        <i data-lucide="flag" size="14"></i> Fields
+                    <div onclick="toggleAmenity('PLAY_FIELDS', this)" class="amenity-chip px-3 py-2 md:px-4 md:py-2 bg-white border border-slate-100 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="flag" size="12" class="md:w-3.5 md:h-3.5"></i> Fields
                     </div>
-                    <div onclick="toggleAmenity('PICNIC_TABLES', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
-                        <i data-lucide="utensils" size="14"></i> Picnic
+                    <div onclick="toggleAmenity('PICNIC_TABLES', this)" class="amenity-chip px-3 py-2 md:px-4 md:py-2 bg-white border border-slate-100 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="utensils" size="12" class="md:w-3.5 md:h-3.5"></i> Picnic
                     </div>
-                    <div onclick="toggleAmenity('GRILL', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
-                        <i data-lucide="flame" size="14"></i> Grills
+                    <div onclick="toggleAmenity('GRILL', this)" class="amenity-chip px-3 py-2 md:px-4 md:py-2 bg-white border border-slate-100 rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="flame" size="12" class="md:w-3.5 md:h-3.5"></i> Grills
                     </div>
                 </div>
             </div>
         </header>
 
         <!-- Directory List -->
-        <div class="glass-panel rounded-[2.5rem] flex-1 overflow-hidden flex flex-col pointer-events-auto">
-            <div class="px-6 py-4 flex justify-between items-center border-b border-slate-100">
-                <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+        <div id="directoryPanel" class="glass-panel rounded-[2rem] md:rounded-[2.5rem] flex-1 overflow-hidden flex flex-col pointer-events-auto mobile-hidden transition-all duration-300">
+            <div class="px-5 py-3 md:px-6 md:py-4 flex justify-between items-center border-b border-slate-100">
+                <span class="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                     City Parks
                 </span>
-                <span id="parkCount" class="text-[10px] font-black bg-emerald-600 text-white px-2 py-1 rounded-lg">--</span>
+                <span id="parkCount" class="text-[9px] md:text-[10px] font-black bg-emerald-600 text-white px-2 py-1 rounded-lg">--</span>
             </div>
 
             <div id="parkList" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
@@ -160,50 +172,51 @@
         </div>
     </div>
 
+    <!-- Background Map -->
     <div id="map"></div>
 
     <!-- Detail Modal -->
-    <div id="parkModal" class="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center p-6">
-        <div class="glass-panel w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl scale-95 opacity-0 transition-all duration-500 ease-out" id="modalContent">
-            <div class="relative h-44 bg-slate-900 p-10 flex items-end overflow-hidden">
+    <div id="parkModal" class="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center p-4 md:p-6">
+        <div class="glass-panel w-full max-w-2xl rounded-[2.5rem] md:rounded-[3rem] overflow-hidden shadow-2xl scale-95 opacity-0 transition-all duration-500 ease-out" id="modalContent">
+            <div class="relative h-32 md:h-44 bg-slate-900 p-6 md:p-10 flex items-end overflow-hidden">
                 <div class="absolute inset-0 opacity-60 bg-gradient-to-br from-emerald-600 via-teal-800 to-slate-900"></div>
-                <button onclick="closeModal()" class="absolute top-8 right-8 bg-white/10 hover:bg-white/20 p-3 rounded-full text-white transition-all z-10">
-                    <i data-lucide="x" size="24"></i>
+                <button onclick="closeModal()" class="absolute top-4 right-4 md:top-8 md:right-8 bg-white/10 hover:bg-white/20 p-2 md:p-3 rounded-full text-white transition-all z-10">
+                    <i data-lucide="x" size="20" class="md:w-6 md:h-6"></i>
                 </button>
                 <div class="relative z-10">
-                    <h2 id="modalTitle" class="text-3xl font-black text-white leading-none tracking-tight">Park Name</h2>
+                    <h2 id="modalTitle" class="text-xl md:text-3xl font-black text-white leading-tight tracking-tight">Park Name</h2>
                 </div>
             </div>
             
-            <div class="p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="space-y-6">
+            <div class="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                <div class="space-y-4 md:space-y-6">
                     <div>
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Location & Details</p>
-                        <div class="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100/50 space-y-4">
+                        <div class="p-4 md:p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100/50 space-y-3 md:space-y-4">
                             <div class="flex items-start gap-3">
-                                <i data-lucide="map-pin" size="18" class="mt-0.5 text-emerald-600"></i>
-                                <p id="modalAddress" class="text-sm font-bold text-slate-700 leading-tight">-</p>
+                                <i data-lucide="map-pin" size="16" class="mt-0.5 text-emerald-600 flex-shrink-0"></i>
+                                <p id="modalAddress" class="text-xs md:text-sm font-bold text-slate-700 leading-tight">-</p>
                             </div>
                             <div class="flex items-center gap-3">
-                                <i data-lucide="maximize" size="18" class="text-emerald-600"></i>
-                                <p id="modalSize" class="text-sm font-bold text-slate-700">-</p>
+                                <i data-lucide="maximize" size="16" class="text-emerald-600 flex-shrink-0"></i>
+                                <p id="modalSize" class="text-xs md:text-sm font-bold text-slate-700">-</p>
                             </div>
                             <div class="flex items-center gap-3">
-                                <i data-lucide="landmark" size="18" class="text-emerald-600"></i>
-                                <p id="modalType" class="text-sm font-bold text-slate-700">-</p>
+                                <i data-lucide="landmark" size="16" class="text-emerald-600 flex-shrink-0"></i>
+                                <p id="modalType" class="text-xs md:text-sm font-bold text-slate-700">-</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="space-y-6">
+                <div class="space-y-4 md:space-y-6 flex flex-col">
                     <div>
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Available Amenities</p>
                         <div id="modalAmenities" class="flex flex-wrap gap-2"></div>
                     </div>
 
-                    <button id="zoomBtn" class="w-full mt-auto py-5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-[1.5rem] transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-100 uppercase tracking-widest">
-                        <i data-lucide="navigation" size="20"></i> Explore Area
+                    <button id="zoomBtn" class="w-full mt-auto py-4 md:py-5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm font-black rounded-[1.25rem] md:rounded-[1.5rem] transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-100 uppercase tracking-widest">
+                        <i data-lucide="navigation" size="18" class="md:w-5 md:h-5"></i> Explore Area
                     </button>
                 </div>
             </div>
@@ -228,13 +241,32 @@
 
         const parksUrl = "https://maps.roundrocktexas.gov/arcgis/rest/services/ParksAndRecreation/PARD/MapServer/28";
         let allFeatures = [];
-        let groupedFeatures = {}; // New storage for deduplicated features
+        let groupedFeatures = {};
         let polygonLayer;
         let markerGroup = L.layerGroup().addTo(map);
         let activeAmenities = new Set();
+        let isListExpanded = false;
+
+        // Mobile Menu Toggle Logic
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const directoryPanel = document.getElementById('directoryPanel');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        mobileMenuToggle.addEventListener('click', () => {
+            isListExpanded = !isListExpanded;
+            if (isListExpanded) {
+                directoryPanel.classList.remove('mobile-hidden');
+                directoryPanel.classList.add('mobile-expanded');
+                toggleIcon.setAttribute('data-lucide', 'chevron-up');
+            } else {
+                directoryPanel.classList.add('mobile-hidden');
+                directoryPanel.classList.remove('mobile-expanded');
+                toggleIcon.setAttribute('data-lucide', 'menu');
+            }
+            lucide.createIcons();
+        });
 
         async function loadData() {
-            // Exclude LINEAR/GREENBELT and OPEN SPACE
             const whereClause = "(UPPER(OWNER) = 'CITY' OR UPPER(OWNER) = 'CORR') AND UPPER(PARK_STATUS) = 'OPEN' AND UPPER(PARK_TYPE) <> 'LINEAR/GREENBELT' AND UPPER(PARK_TYPE) <> 'OPEN SPACE'";
             const queryUrl = `${parksUrl}/query?where=${encodeURIComponent(whereClause)}&outFields=*&f=geojson&returnGeometry=true`;
             
@@ -243,28 +275,25 @@
                 const data = await response.json();
                 let features = (data.features || []).filter(f => f.geometry);
                 
-                // --- Deduplication & Grouping Logic ---
                 groupedFeatures = {};
                 features.forEach(f => {
                     const name = (f.properties.PARK_NAME || "Untitled").trim();
                     if (!groupedFeatures[name]) {
                         groupedFeatures[name] = {
                             name: name,
-                            properties: f.properties, // Keep properties of first instance
-                            geometries: [f.geometry], // Array to hold all polygons
+                            properties: f.properties,
+                            geometries: [f.geometry],
                             originalFeatures: [f]
                         };
                     } else {
                         groupedFeatures[name].geometries.push(f.geometry);
                         groupedFeatures[name].originalFeatures.push(f);
-                        // Sum the acres if applicable
                         if (f.properties.PARK_ACRES) {
                             groupedFeatures[name].properties.PARK_ACRES = (groupedFeatures[name].properties.PARK_ACRES || 0) + f.properties.PARK_ACRES;
                         }
                     }
                 });
 
-                // Convert grouped object back to a sorted list for the UI
                 const finalParks = Object.values(groupedFeatures).sort((a, b) => 
                     a.name.localeCompare(b.name)
                 );
@@ -288,11 +317,10 @@
             markerGroup.clearLayers();
             parks.forEach(park => {
                 try {
-                    // Create a collective layer to get a unified center
                     const collectiveLayer = L.geoJSON(park.geometries);
                     const center = collectiveLayer.getBounds().getCenter();
                     const marker = L.circleMarker(center, {
-                        radius: 7,
+                        radius: window.innerWidth < 768 ? 6 : 7,
                         fillColor: "#10b981",
                         color: "#fff",
                         weight: 2,
@@ -307,7 +335,6 @@
         function showPolygon(park) {
             if (polygonLayer) map.removeLayer(polygonLayer);
             
-            // Render all associated geometries for this park
             polygonLayer = L.geoJSON(park.geometries, {
                 style: {
                     color: '#059669',
@@ -319,7 +346,7 @@
             
             const bounds = polygonLayer.getBounds();
             if (bounds.isValid()) {
-                map.fitBounds(bounds, { padding: [100, 100], maxZoom: 16 });
+                map.fitBounds(bounds, { padding: [20, 20], maxZoom: 16 });
             }
         }
 
@@ -333,17 +360,23 @@
             parks.forEach(park => {
                 const p = park.properties;
                 const card = document.createElement('div');
-                card.className = 'park-card p-5 bg-white/80 rounded-[1.5rem] border border-slate-50 cursor-pointer group flex items-center justify-between gap-4';
+                card.className = 'park-card p-4 md:p-5 bg-white/80 rounded-[1.25rem] md:rounded-[1.5rem] border border-slate-50 cursor-pointer group flex items-center justify-between gap-4';
                 card.innerHTML = `
                     <div class="min-w-0 flex-1">
-                        <h3 class="font-extrabold text-slate-800 text-[13px] truncate group-hover:text-emerald-600 transition-colors uppercase leading-tight">${park.name}</h3>
-                        <p class="text-[10px] text-slate-400 mt-1 font-bold truncate">${p.ADDRESS || 'Round Rock, TX'}</p>
+                        <h3 class="font-extrabold text-slate-800 text-[12px] md:text-[13px] truncate group-hover:text-emerald-600 transition-colors uppercase leading-tight">${park.name}</h3>
+                        <p class="text-[9px] md:text-[10px] text-slate-400 mt-1 font-bold truncate">${p.ADDRESS || 'Round Rock, TX'}</p>
                     </div>
-                    <div class="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-all flex-shrink-0">
+                    <div class="w-7 h-7 md:w-8 md:h-8 bg-emerald-50 rounded-lg md:rounded-xl flex items-center justify-center text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-all flex-shrink-0">
                         <i data-lucide="chevron-right" size="14"></i>
                     </div>
                 `;
-                card.onclick = () => showDetails(park);
+                card.onclick = () => {
+                    showDetails(park);
+                    // Collapse list on mobile when selection made
+                    if (window.innerWidth < 768 && isListExpanded) {
+                        mobileMenuToggle.click();
+                    }
+                };
                 listEl.appendChild(card);
             });
             lucide.createIcons();
@@ -367,7 +400,6 @@
                 
                 let matchesAmenities = true;
                 activeAmenities.forEach(field => {
-                    // Check if ANY of the original features in this group have the amenity
                     const hasAmenity = park.originalFeatures.some(f => {
                         const val = (f.properties[field] || "").toString().toUpperCase();
                         return val === "Y" || val === "YES" || val === "1";
@@ -408,7 +440,6 @@
             ];
 
             amenityFields.forEach(item => {
-                // Check if any part of the grouped park has this amenity
                 const hasAmenity = park.originalFeatures.some(f => {
                     const val = (f.properties[item.field] || "").toString().toUpperCase();
                     return val === "Y" || val === "YES" || val === "1";
@@ -416,14 +447,14 @@
 
                 if (hasAmenity) {
                     amenityEl.innerHTML += `
-                        <div class="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-100/50 rounded-xl text-emerald-700">
-                            <i data-lucide="${item.icon}" size="14"></i>
-                            <span class="text-[10px] font-black uppercase">${item.label}</span>
+                        <div class="flex items-center gap-2 px-3 py-1.5 md:py-2 bg-emerald-50 border border-emerald-100/50 rounded-lg md:rounded-xl text-emerald-700">
+                            <i data-lucide="${item.icon}" size="12" class="md:w-3.5 md:h-3.5"></i>
+                            <span class="text-[9px] md:text-[10px] font-black uppercase">${item.label}</span>
                         </div>`;
                 }
             });
 
-            if (amenityEl.innerHTML === '') amenityEl.innerHTML = '<p class="text-[10px] text-slate-400 italic">No specific facilities documented.</p>';
+            if (amenityEl.innerHTML === '') amenityEl.innerHTML = '<p class="text-[9px] md:text-[10px] text-slate-400 italic">No specific facilities documented.</p>';
 
             document.getElementById('zoomBtn').onclick = () => {
                 showPolygon(park);
