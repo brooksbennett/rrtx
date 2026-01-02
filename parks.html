@@ -83,10 +83,11 @@
         /* Responsive UI Toggles */
         @media (max-width: 768px) {
             .mobile-hidden { display: none !important; }
+            /* Substantially increased height for the expanded list on mobile */
             .mobile-expanded { 
                 display: flex !important;
-                height: 60vh !important; 
-                max-height: 500px;
+                height: 75vh !important; 
+                max-height: 80vh;
             }
         }
     </style>
@@ -108,19 +109,22 @@
                         <p class="text-[9px] md:text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em] mt-1">Round Rock, Texas</p>
                     </div>
                 </div>
+                <!-- Mobile Toggle Button -->
                 <button id="mobileMenuToggle" class="md:hidden bg-emerald-50 text-emerald-600 p-2 rounded-xl transition-colors active:bg-emerald-100">
                     <i data-lucide="menu" id="toggleIcon"></i>
                 </button>
             </div>
 
-            <div class="relative mb-4 md:mb-5 flex items-center">
-                <div class="absolute left-4 flex items-center justify-center text-slate-400 pointer-events-none">
+            <!-- Search Bar -->
+            <div class="relative mb-4 md:mb-5 flex items-center h-10 md:h-12">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                     <i data-lucide="search" size="16"></i>
                 </div>
                 <input type="text" id="parkSearch" placeholder="Find a park..." 
-                       class="w-full pl-10 pr-4 py-3 bg-white/80 border border-slate-100 rounded-xl md:rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all shadow-inner text-sm font-medium leading-none">
+                       class="w-full h-full pl-10 pr-4 bg-white/80 border border-slate-100 rounded-xl md:rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all shadow-inner text-sm font-medium">
             </div>
 
+            <!-- Amenity Filter Bar -->
             <div class="filter-container group">
                 <button onclick="scrollFilters(-100)" class="nav-arrow absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/95 p-1.5 rounded-full shadow-md text-emerald-600 border border-emerald-100 -ml-2 mobile-hidden">
                     <i data-lucide="chevron-left" size="14"></i>
@@ -329,15 +333,20 @@
                     const collectiveLayer = L.geoJSON(park.geometries);
                     const center = collectiveLayer.getBounds().getCenter();
                     
+                    // Reduced visual radius (8 vs 12) but added a massive transparent stroke 
+                    // to provide a large touch target without visual overlap.
                     const marker = L.circleMarker(center, {
-                        radius: isMobile ? 12 : 7, 
+                        radius: isMobile ? 8 : 7, 
                         fillColor: "#10b981",
-                        color: "#fff",
-                        weight: isMobile ? 3 : 2,
-                        opacity: 1,
+                        color: "transparent", // Large transparent hit area
+                        weight: isMobile ? 15 : 2, // Invisible but clickable border
+                        opacity: 0,
                         fillOpacity: 0.9,
-                        className: 'map-touch-target'
+                        className: 'map-marker'
                     }).addTo(markerGroup);
+
+                    // Add a thin white border to the visual green circle for contrast
+                    marker.setStyle({ color: 'white', opacity: 1, weight: 2 });
                     
                     marker.on('click', () => showDetails(park));
                 } catch (err) {}
