@@ -83,7 +83,11 @@
         /* Responsive UI Toggles */
         @media (max-width: 768px) {
             .mobile-hidden { display: none !important; }
-            .mobile-expanded { height: calc(100vh - 12rem) !important; }
+            .mobile-expanded { 
+                display: flex !important;
+                height: 60vh !important; 
+                max-height: 500px;
+            }
         }
     </style>
 </head>
@@ -104,13 +108,11 @@
                         <p class="text-[9px] md:text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em] mt-1">Round Rock, Texas</p>
                     </div>
                 </div>
-                <!-- Mobile Toggle Button -->
                 <button id="mobileMenuToggle" class="md:hidden bg-emerald-50 text-emerald-600 p-2 rounded-xl transition-colors active:bg-emerald-100">
                     <i data-lucide="menu" id="toggleIcon"></i>
                 </button>
             </div>
 
-            <!-- Search Bar -->
             <div class="relative mb-4 md:mb-5 flex items-center">
                 <div class="absolute left-4 flex items-center justify-center text-slate-400 pointer-events-none">
                     <i data-lucide="search" size="16"></i>
@@ -119,7 +121,6 @@
                        class="w-full pl-10 pr-4 py-3 bg-white/80 border border-slate-100 rounded-xl md:rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all shadow-inner text-sm font-medium leading-none">
             </div>
 
-            <!-- Amenity Filter Bar -->
             <div class="filter-container group">
                 <button onclick="scrollFilters(-100)" class="nav-arrow absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/95 p-1.5 rounded-full shadow-md text-emerald-600 border border-emerald-100 -ml-2 mobile-hidden">
                     <i data-lucide="chevron-left" size="14"></i>
@@ -215,9 +216,14 @@
                         <div id="modalAmenities" class="flex flex-wrap gap-2"></div>
                     </div>
 
-                    <button id="zoomBtn" class="w-full mt-auto py-4 md:py-5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm font-black rounded-[1.25rem] md:rounded-[1.5rem] transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-100 uppercase tracking-widest">
-                        <i data-lucide="navigation" size="18" class="md:w-5 md:h-5"></i> Explore Area
-                    </button>
+                    <div class="grid grid-cols-1 gap-3 mt-auto pt-4 border-t border-slate-100">
+                        <button id="directionsBtn" class="w-full py-4 bg-white border-2 border-emerald-600 text-emerald-600 text-xs md:text-sm font-black rounded-[1.25rem] md:rounded-[1.5rem] transition-all flex items-center justify-center gap-3 uppercase tracking-widest hover:bg-emerald-50">
+                            <i data-lucide="map" size="18" class="md:w-5 md:h-5"></i> Get Directions
+                        </button>
+                        <button id="zoomBtn" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm font-black rounded-[1.25rem] md:rounded-[1.5rem] transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-100 uppercase tracking-widest">
+                            <i data-lucide="navigation" size="18" class="md:w-5 md:h-5"></i> Explore Area
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -234,7 +240,9 @@
             zoomControl: false,
             center: [30.5083, -97.6789],
             zoom: 12,
-            attributionControl: false
+            attributionControl: false,
+            tap: true,
+            bounceAtZoomLimits: true
         });
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map);
@@ -247,7 +255,6 @@
         let activeAmenities = new Set();
         let isListExpanded = false;
 
-        // Mobile Menu Toggle Logic
         const mobileMenuToggle = document.getElementById('mobileMenuToggle');
         const directoryPanel = document.getElementById('directoryPanel');
         const toggleIcon = document.getElementById('toggleIcon');
@@ -315,18 +322,23 @@
 
         function renderMarkers(parks) {
             markerGroup.clearLayers();
+            const isMobile = window.innerWidth < 768;
+            
             parks.forEach(park => {
                 try {
                     const collectiveLayer = L.geoJSON(park.geometries);
                     const center = collectiveLayer.getBounds().getCenter();
+                    
                     const marker = L.circleMarker(center, {
-                        radius: window.innerWidth < 768 ? 6 : 7,
+                        radius: isMobile ? 12 : 7, 
                         fillColor: "#10b981",
                         color: "#fff",
-                        weight: 2,
+                        weight: isMobile ? 3 : 2,
                         opacity: 1,
-                        fillOpacity: 0.9
+                        fillOpacity: 0.9,
+                        className: 'map-touch-target'
                     }).addTo(markerGroup);
+                    
                     marker.on('click', () => showDetails(park));
                 } catch (err) {}
             });
@@ -372,7 +384,6 @@
                 `;
                 card.onclick = () => {
                     showDetails(park);
-                    // Collapse list on mobile when selection made
                     if (window.innerWidth < 768 && isListExpanded) {
                         mobileMenuToggle.click();
                     }
@@ -456,6 +467,16 @@
 
             if (amenityEl.innerHTML === '') amenityEl.innerHTML = '<p class="text-[9px] md:text-[10px] text-slate-400 italic">No specific facilities documented.</p>';
 
+            // Setup Navigation and Zoom
+            const collectiveLayer = L.geoJSON(park.geometries);
+            const center = collectiveLayer.getBounds().getCenter();
+            
+            document.getElementById('directionsBtn').onclick = () => {
+                const dest = `${center.lat},${center.lng}`;
+                const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
+                window.open(mapUrl, '_blank');
+            };
+
             document.getElementById('zoomBtn').onclick = () => {
                 showPolygon(park);
                 closeModal();
@@ -481,6 +502,12 @@
         document.getElementById('parkModal').onclick = (e) => { if (e.target.id === 'parkModal') closeModal(); };
 
         window.onload = loadData;
+        
+        window.addEventListener('resize', () => {
+            renderMarkers(activeAmenities.size > 0 || document.getElementById('parkSearch').value ? 
+                allFeatures.filter(p => (p.name + p.properties.ADDRESS).toLowerCase().includes(document.getElementById('parkSearch').value.toLowerCase())) 
+                : allFeatures);
+        });
     </script>
 </body>
 </html>
