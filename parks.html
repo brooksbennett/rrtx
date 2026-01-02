@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Round Rock Parks Explorer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+        }
+        #map {
+            height: 100vh;
+            width: 100%;
+            z-index: 0;
+            background: #ecfdf5;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.08);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .park-card { transition: all 0.3s ease; }
+        .park-card:hover { transform: translateY(-3px); border-color: #10b981; }
+
+        .amenity-chip {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .amenity-chip.active {
+            background: #10b981;
+            color: white;
+            border-color: #059669;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .filter-container {
+            position: relative;
+        }
+        .filter-container::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 30px;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.8));
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        .nav-arrow {
+            opacity: 0;
+            transition: opacity 0.2s ease, background 0.2s ease;
+        }
+        .filter-container:hover .nav-arrow {
+            opacity: 1;
+        }
+        .nav-arrow:hover {
+            background-color: #f0fdf4;
+        }
+    </style>
+</head>
+<body class="bg-emerald-50/30">
+
+    <!-- Sidebar UI -->
+    <div class="fixed top-6 left-6 z-50 w-full max-w-[380px] h-[calc(100vh-3rem)] flex flex-col pointer-events-none">
+        
+        <!-- Header & Search -->
+        <header class="glass-panel p-6 rounded-[2.5rem] mb-4 pointer-events-auto">
+            <div class="flex items-center gap-4 mb-5">
+                <div class="bg-emerald-600 p-3 rounded-2xl text-white shadow-xl shadow-emerald-200">
+                    <i data-lucide="trees" size="24"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-slate-900 tracking-tight leading-none">Parks Explorer</h1>
+                    <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em] mt-1">Round Rock, Texas</p>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative mb-5 flex items-center">
+                <div class="absolute left-4 flex items-center justify-center text-slate-400 pointer-events-none">
+                    <i data-lucide="search" size="18"></i>
+                </div>
+                <input type="text" id="parkSearch" placeholder="Find a park..." 
+                       class="w-full pl-11 pr-4 py-3.5 bg-white/80 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all shadow-inner text-sm font-medium leading-none">
+            </div>
+
+            <!-- Amenity Filter Bar -->
+            <div class="filter-container group">
+                <button onclick="scrollFilters(-100)" class="nav-arrow absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/95 p-1.5 rounded-full shadow-md text-emerald-600 border border-emerald-100 -ml-2">
+                    <i data-lucide="chevron-left" size="14"></i>
+                </button>
+                <button onclick="scrollFilters(100)" class="nav-arrow absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/95 p-1.5 rounded-full shadow-md text-emerald-600 border border-emerald-100 -mr-2">
+                    <i data-lucide="chevron-right" size="14"></i>
+                </button>
+
+                <div id="filterList" class="flex overflow-x-auto gap-2 pb-2 px-1 no-scrollbar scroll-smooth">
+                    <div onclick="toggleAmenity('RESTROOM', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="bath" size="14"></i> Restrooms
+                    </div>
+                    <div onclick="toggleAmenity('PLAYSCAPE', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="baby" size="14"></i> Play
+                    </div>
+                    <div onclick="toggleAmenity('LIGHTED', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="sun" size="14"></i> Lights
+                    </div>
+                    <div onclick="toggleAmenity('DRINKING_FOUNTAINS', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="droplets" size="14"></i> Water
+                    </div>
+                    <div onclick="toggleAmenity('PLAY_COURT', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="basketball" size="14"></i> Courts
+                    </div>
+                    <div onclick="toggleAmenity('PLAY_FIELDS', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="flag" size="14"></i> Fields
+                    </div>
+                    <div onclick="toggleAmenity('PICNIC_TABLES', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="utensils" size="14"></i> Picnic
+                    </div>
+                    <div onclick="toggleAmenity('GRILL', this)" class="amenity-chip px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 flex items-center gap-2">
+                        <i data-lucide="flame" size="14"></i> Grills
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Directory List -->
+        <div class="glass-panel rounded-[2.5rem] flex-1 overflow-hidden flex flex-col pointer-events-auto">
+            <div class="px-6 py-4 flex justify-between items-center border-b border-slate-100">
+                <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    City Parks
+                </span>
+                <span id="parkCount" class="text-[10px] font-black bg-emerald-600 text-white px-2 py-1 rounded-lg">--</span>
+            </div>
+
+            <div id="parkList" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
+                <div class="p-8 text-center text-slate-400 text-xs animate-pulse">Syncing with Round Rock GIS...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Detail Modal -->
+    <div id="parkModal" class="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-md hidden flex items-center justify-center p-6">
+        <div class="glass-panel w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl scale-95 opacity-0 transition-all duration-500 ease-out" id="modalContent">
+            <div class="relative h-44 bg-slate-900 p-10 flex items-end overflow-hidden">
+                <div class="absolute inset-0 opacity-60 bg-gradient-to-br from-emerald-600 via-teal-800 to-slate-900"></div>
+                <button onclick="closeModal()" class="absolute top-8 right-8 bg-white/10 hover:bg-white/20 p-3 rounded-full text-white transition-all z-10">
+                    <i data-lucide="x" size="24"></i>
+                </button>
+                <div class="relative z-10">
+                    <h2 id="modalTitle" class="text-3xl font-black text-white leading-none tracking-tight">Park Name</h2>
+                </div>
+            </div>
+            
+            <div class="p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-6">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Location & Details</p>
+                        <div class="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100/50 space-y-4">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="map-pin" size="18" class="mt-0.5 text-emerald-600"></i>
+                                <p id="modalAddress" class="text-sm font-bold text-slate-700 leading-tight">-</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="maximize" size="18" class="text-emerald-600"></i>
+                                <p id="modalSize" class="text-sm font-bold text-slate-700">-</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="landmark" size="18" class="text-emerald-600"></i>
+                                <p id="modalType" class="text-sm font-bold text-slate-700">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Available Amenities</p>
+                        <div id="modalAmenities" class="flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <button id="zoomBtn" class="w-full mt-auto py-5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-[1.5rem] transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-100 uppercase tracking-widest">
+                        <i data-lucide="navigation" size="20"></i> Explore Area
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+
+    <script>
+        lucide.createIcons();
+        
+        const map = L.map('map', {
+            zoomControl: false,
+            center: [30.5083, -97.6789],
+            zoom: 12,
+            attributionControl: false
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map);
+
+        const parksUrl = "https://maps.roundrocktexas.gov/arcgis/rest/services/ParksAndRecreation/PARD/MapServer/28";
+        let allFeatures = [];
+        let groupedFeatures = {}; // New storage for deduplicated features
+        let polygonLayer;
+        let markerGroup = L.layerGroup().addTo(map);
+        let activeAmenities = new Set();
+
+        async function loadData() {
+            // Exclude LINEAR/GREENBELT and OPEN SPACE
+            const whereClause = "(UPPER(OWNER) = 'CITY' OR UPPER(OWNER) = 'CORR') AND UPPER(PARK_STATUS) = 'OPEN' AND UPPER(PARK_TYPE) <> 'LINEAR/GREENBELT' AND UPPER(PARK_TYPE) <> 'OPEN SPACE'";
+            const queryUrl = `${parksUrl}/query?where=${encodeURIComponent(whereClause)}&outFields=*&f=geojson&returnGeometry=true`;
+            
+            try {
+                const response = await fetch(queryUrl);
+                const data = await response.json();
+                let features = (data.features || []).filter(f => f.geometry);
+                
+                // --- Deduplication & Grouping Logic ---
+                groupedFeatures = {};
+                features.forEach(f => {
+                    const name = (f.properties.PARK_NAME || "Untitled").trim();
+                    if (!groupedFeatures[name]) {
+                        groupedFeatures[name] = {
+                            name: name,
+                            properties: f.properties, // Keep properties of first instance
+                            geometries: [f.geometry], // Array to hold all polygons
+                            originalFeatures: [f]
+                        };
+                    } else {
+                        groupedFeatures[name].geometries.push(f.geometry);
+                        groupedFeatures[name].originalFeatures.push(f);
+                        // Sum the acres if applicable
+                        if (f.properties.PARK_ACRES) {
+                            groupedFeatures[name].properties.PARK_ACRES = (groupedFeatures[name].properties.PARK_ACRES || 0) + f.properties.PARK_ACRES;
+                        }
+                    }
+                });
+
+                // Convert grouped object back to a sorted list for the UI
+                const finalParks = Object.values(groupedFeatures).sort((a, b) => 
+                    a.name.localeCompare(b.name)
+                );
+
+                allFeatures = finalParks;
+                renderMarkers(allFeatures);
+                renderList(allFeatures);
+                document.getElementById('parkCount').innerText = allFeatures.length;
+            } catch (e) {
+                console.error("GIS Load Error:", e);
+                document.getElementById('parkList').innerHTML = `<div class="p-6 text-red-500 text-xs font-bold text-center">Service Unavailable</div>`;
+            }
+        }
+
+        function scrollFilters(amount) {
+            const list = document.getElementById('filterList');
+            list.scrollLeft += amount;
+        }
+
+        function renderMarkers(parks) {
+            markerGroup.clearLayers();
+            parks.forEach(park => {
+                try {
+                    // Create a collective layer to get a unified center
+                    const collectiveLayer = L.geoJSON(park.geometries);
+                    const center = collectiveLayer.getBounds().getCenter();
+                    const marker = L.circleMarker(center, {
+                        radius: 7,
+                        fillColor: "#10b981",
+                        color: "#fff",
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    }).addTo(markerGroup);
+                    marker.on('click', () => showDetails(park));
+                } catch (err) {}
+            });
+        }
+
+        function showPolygon(park) {
+            if (polygonLayer) map.removeLayer(polygonLayer);
+            
+            // Render all associated geometries for this park
+            polygonLayer = L.geoJSON(park.geometries, {
+                style: {
+                    color: '#059669',
+                    weight: 3,
+                    fillOpacity: 0.25,
+                    fillColor: '#10b981'
+                }
+            }).addTo(map);
+            
+            const bounds = polygonLayer.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [100, 100], maxZoom: 16 });
+            }
+        }
+
+        function renderList(parks) {
+            const listEl = document.getElementById('parkList');
+            listEl.innerHTML = '';
+            if (parks.length === 0) {
+                listEl.innerHTML = `<div class="p-10 text-center text-slate-400 text-xs italic">No parks found.</div>`;
+                return;
+            }
+            parks.forEach(park => {
+                const p = park.properties;
+                const card = document.createElement('div');
+                card.className = 'park-card p-5 bg-white/80 rounded-[1.5rem] border border-slate-50 cursor-pointer group flex items-center justify-between gap-4';
+                card.innerHTML = `
+                    <div class="min-w-0 flex-1">
+                        <h3 class="font-extrabold text-slate-800 text-[13px] truncate group-hover:text-emerald-600 transition-colors uppercase leading-tight">${park.name}</h3>
+                        <p class="text-[10px] text-slate-400 mt-1 font-bold truncate">${p.ADDRESS || 'Round Rock, TX'}</p>
+                    </div>
+                    <div class="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-all flex-shrink-0">
+                        <i data-lucide="chevron-right" size="14"></i>
+                    </div>
+                `;
+                card.onclick = () => showDetails(park);
+                listEl.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function toggleAmenity(field, el) {
+            el.classList.toggle('active');
+            if (activeAmenities.has(field)) {
+                activeAmenities.delete(field);
+            } else {
+                activeAmenities.add(field);
+            }
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('parkSearch').value.toLowerCase();
+            const filtered = allFeatures.filter(park => {
+                const p = park.properties;
+                const matchesSearch = (park.name + (p.ADDRESS || "")).toLowerCase().includes(searchTerm);
+                
+                let matchesAmenities = true;
+                activeAmenities.forEach(field => {
+                    // Check if ANY of the original features in this group have the amenity
+                    const hasAmenity = park.originalFeatures.some(f => {
+                        const val = (f.properties[field] || "").toString().toUpperCase();
+                        return val === "Y" || val === "YES" || val === "1";
+                    });
+                    if (!hasAmenity) matchesAmenities = false;
+                });
+                return matchesSearch && matchesAmenities;
+            });
+            renderList(filtered);
+            renderMarkers(filtered);
+            document.getElementById('parkCount').innerText = filtered.length;
+        }
+
+        function showDetails(park) {
+            const p = park.properties;
+            const modal = document.getElementById('parkModal');
+            const content = document.getElementById('modalContent');
+            
+            document.getElementById('modalTitle').innerText = park.name;
+            document.getElementById('modalAddress').innerText = p.ADDRESS || 'Address not listed';
+            document.getElementById('modalSize').innerText = p.PARK_ACRES ? `${p.PARK_ACRES.toFixed(2)} Total Acres` : 'N/A';
+            document.getElementById('modalType').innerText = p.PARK_TYPE ? `${p.PARK_TYPE} PARK` : 'CITY PARK';
+
+            const amenityEl = document.getElementById('modalAmenities');
+            amenityEl.innerHTML = '';
+            
+            const amenityFields = [
+                { field: 'LIGHTED', label: 'Lighted', icon: 'sun' },
+                { field: 'RESTROOM', label: 'Restrooms', icon: 'bath' },
+                { field: 'PICNIC_SHELTER', label: 'Shelter', icon: 'umbrella' },
+                { field: 'PICNIC_TABLES', label: 'Picnic', icon: 'utensils' },
+                { field: 'GRILL', label: 'Grill', icon: 'flame' },
+                { field: 'DRINKING_FOUNTAINS', label: 'Water', icon: 'droplets' },
+                { field: 'PLAYSCAPE', label: 'Playscape', icon: 'baby' },
+                { field: 'POOL_WATER_FEATURE', label: 'Water Play', icon: 'waves' },
+                { field: 'PLAY_COURT', label: 'Courts', icon: 'basketball' },
+                { field: 'PLAY_FIELDS', label: 'Fields', icon: 'flag' }
+            ];
+
+            amenityFields.forEach(item => {
+                // Check if any part of the grouped park has this amenity
+                const hasAmenity = park.originalFeatures.some(f => {
+                    const val = (f.properties[item.field] || "").toString().toUpperCase();
+                    return val === "Y" || val === "YES" || val === "1";
+                });
+
+                if (hasAmenity) {
+                    amenityEl.innerHTML += `
+                        <div class="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-100/50 rounded-xl text-emerald-700">
+                            <i data-lucide="${item.icon}" size="14"></i>
+                            <span class="text-[10px] font-black uppercase">${item.label}</span>
+                        </div>`;
+                }
+            });
+
+            if (amenityEl.innerHTML === '') amenityEl.innerHTML = '<p class="text-[10px] text-slate-400 italic">No specific facilities documented.</p>';
+
+            document.getElementById('zoomBtn').onclick = () => {
+                showPolygon(park);
+                closeModal();
+            };
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.replace('scale-95', 'scale-100');
+                content.classList.replace('opacity-0', 'opacity-100');
+            }, 50);
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('parkModal');
+            const content = document.getElementById('modalContent');
+            content.classList.replace('scale-100', 'scale-95');
+            content.classList.replace('opacity-100', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 500);
+        }
+
+        document.getElementById('parkSearch').addEventListener('input', applyFilters);
+        document.getElementById('parkModal').onclick = (e) => { if (e.target.id === 'parkModal') closeModal(); };
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
