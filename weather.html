@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inclement Weather Council Briefing Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            ring: 2px solid #bfdbfe;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #1d4ed8;
+        }
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .dept-card {
+            border-left: 4px solid #3b82f6;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 22px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #2563eb; }
+        input:checked + .slider:before { transform: translateX(20px); }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .loading-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8 text-center md:text-left">
+            <h1 class="text-3xl font-bold text-slate-900">Weather Briefing Tool</h1>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-7 space-y-6">
+                <!-- Basic Info -->
+                <section class="card p-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 border-b pb-2">
+                        <i class="fas fa-cloud-showers-heavy text-blue-500"></i> Event Details
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Severity / Weather Type</label>
+                            <input type="text" id="severity" placeholder="Default: Temperatures well below freezing..." class="input-field">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Event Duration</label>
+                            <input type="text" id="duration" placeholder="Default: Over the next 24 hours" class="input-field">
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-sun text-amber-500"></i>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-700">Include NWS Forecast</p>
+                                <p class="text-xs text-slate-500">3-day outlook for Round Rock, TX</p>
+                            </div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="include-forecast">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Operational Toggles -->
+                <section class="card p-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 border-b pb-2">
+                        <i class="fas fa-shield-alt text-blue-500"></i> Operational Settings
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-slate-700">Warming Centers</p>
+                                <p class="text-xs text-slate-500">Ready to open for power outages/cold</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="include-warming" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-slate-700">Crisis Response Unit (CRU)</p>
+                                <p class="text-xs text-slate-500">Monitoring vulnerable populations</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="include-cru" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-slate-700">Roadways & Overpasses</p>
+                                <p class="text-xs text-slate-500">Monitoring, pretreatment, and barricades</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="include-roadways" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Department Updates -->
+                <section class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold flex items-center gap-2">
+                            <i class="fas fa-building text-blue-500"></i> Department Updates
+                        </h2>
+                    </div>
+                    <div id="dept-list" class="space-y-4"></div>
+                    <div class="mt-6 pt-4 border-t border-slate-100">
+                        <div class="flex gap-2">
+                            <input type="text" id="new-dept-name" placeholder="New Department Name" class="input-field text-sm">
+                            <button onclick="addDepartment()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 whitespace-nowrap">
+                                <i class="fas fa-plus"></i> Add Dept
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <button id="generate-btn" onclick="generateEmail()" class="w-full btn-primary text-lg shadow-lg">
+                    <i class="fas fa-magic mr-2"></i> Craft Professional Draft
+                </button>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="lg:col-span-5">
+                <div class="sticky top-8">
+                    <div class="card overflow-hidden border border-slate-200">
+                        <div class="bg-slate-50 px-6 py-3 border-b border-slate-200 flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Email Output</span>
+                            <div class="flex gap-4">
+                                <button onclick="copyToClipboard()" class="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center gap-1">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div id="email-preview" class="p-6 text-slate-800 text-sm whitespace-pre-wrap leading-relaxed min-h-[500px] bg-white">
+                            Enter details and click the button to generate your briefing.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-6 py-3 rounded-lg shadow-xl translate-y-20 transition-transform duration-300 pointer-events-none">
+        Copied to clipboard!
+    </div>
+
+    <script>
+        const apiKey = "";
+        const defaultDepts = ["Transportation", "Utilities", "General Services", "Police", "Fire", "Communications and Marketing"];
+
+        function init() {
+            const list = document.getElementById('dept-list');
+            defaultDepts.forEach(dept => createDeptElement(dept));
+        }
+
+        function createDeptElement(name) {
+            const list = document.getElementById('dept-list');
+            const div = document.createElement('div');
+            div.className = "dept-card bg-slate-50 p-4 rounded-r-lg border-l-4 border-blue-400 relative group";
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <label class="font-semibold text-slate-700 text-sm">${name}</label>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <textarea class="dept-input w-full bg-white border border-slate-200 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400" 
+                          data-dept="${name}" rows="2" placeholder="Notes or fragments for ${name}..."></textarea>
+            `;
+            list.appendChild(div);
+        }
+
+        function addDepartment() {
+            const input = document.getElementById('new-dept-name');
+            const name = input.value.trim();
+            if (name) {
+                createDeptElement(name);
+                input.value = '';
+            }
+        }
+
+        async function fetchForecast() {
+            try {
+                const gridUrl = "https://api.weather.gov/gridpoints/EWX/155,90/forecast";
+                const alertUrl = "https://api.weather.gov/alerts/active?area=TX";
+                const [forecastRes, alertsRes] = await Promise.all([
+                    fetch(gridUrl, { headers: { 'User-Agent': 'CityBriefingTool/1.0' } }),
+                    fetch(alertUrl, { headers: { 'User-Agent': 'CityBriefingTool/1.0' } })
+                ]);
+                const forecastData = await forecastRes.json();
+                const alertsData = await alertsRes.json();
+                const relevantAlerts = alertsData.features
+                    .filter(f => f.properties.areaDesc.includes("Williamson"))
+                    .map(f => f.properties.event);
+                const uniqueAlerts = [...new Set(relevantAlerts)];
+                const periods = forecastData.properties.periods.slice(0, 6);
+                let forecastText = "THREE-DAY OUTLOOK (NWS ROUND ROCK)\n";
+                if (uniqueAlerts.length > 0) forecastText += `Current Alerts: ${uniqueAlerts.join(', ')}\n`;
+                periods.forEach(p => forecastText += `• ${p.name}: ${p.temperature}°F. ${p.detailedForecast}\n`);
+                return forecastText + "\n";
+            } catch (error) {
+                return "Forecast data currently unavailable.\n\n";
+            }
+        }
+
+        async function callGeminiAPI(prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: {
+                    parts: [{ text: "You are a professional city communications expert. Your job is to proofread weather briefing drafts to the City Council. Fix all spelling and grammar. Turn sentence fragments into polished, complete sentences. Ensure the address remains 'Council' and the sign-off is exactly 'Brooks and Brad'. Do not include 'Best regards'. Keep the headers 'DEPARTMENT UPDATES' and 'OPERATIONAL PREPAREDNESS & SAFETY' in uppercase. Do not use markdown bolding (**)." }]
+                }
+            };
+
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error();
+                    const data = await response.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text;
+                } catch (e) {
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            throw new Error("Failed to reach AI service after retries.");
+        }
+
+        async function generateEmail() {
+            const btn = document.getElementById('generate-btn');
+            const preview = document.getElementById('email-preview');
+            const rawDuration = document.getElementById('duration').value.trim() || "the next 24 hours";
+            const rawSeverity = document.getElementById('severity').value.trim() || "temperatures well below freezing with anticipated precipitation";
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> AI Proofreading...';
+            preview.innerHTML = '<div class="flex flex-col items-center justify-center h-full text-slate-400"><i class="fas fa-sparkles fa-spin text-blue-500 text-3xl mb-4"></i><p class="loading-pulse">Polishing your draft with AI...</p></div>';
+
+            try {
+                let draftText = `Council,\n\nThis is an update regarding our preparations for the upcoming weather event. We are expecting ${rawSeverity} with impacts expected to last ${rawDuration}.\n\n`;
+
+                if (document.getElementById('include-forecast').checked) {
+                    draftText += await fetchForecast();
+                }
+
+                draftText += `DEPARTMENT UPDATES\n`;
+                const textareas = document.querySelectorAll('.dept-input');
+                let hasDepts = false;
+                textareas.forEach(ta => {
+                    const content = ta.value.trim();
+                    if (content) {
+                        draftText += `• ${ta.getAttribute('data-dept')}: ${content}\n`;
+                        hasDepts = true;
+                    }
+                });
+                if (!hasDepts) draftText += `• No specific updates to report at this hour.\n`;
+                draftText += `\n`;
+
+                if (document.getElementById('include-warming').checked || document.getElementById('include-cru').checked || document.getElementById('include-roadways').checked) {
+                    draftText += `OPERATIONAL PREPAREDNESS & SAFETY\n`;
+                    if (document.getElementById('include-warming').checked) draftText += `• Warming Centers: Ready to open for power outages or extreme cold.\n`;
+                    if (document.getElementById('include-cru').checked) draftText += `• Vulnerable Populations: CRU monitoring for safety and supplies.\n`;
+                    if (document.getElementById('include-roadways').checked) draftText += `• Roadways: Monitoring bridges and pretreating. PD barricades staged at flyovers for safety.\n`;
+                    draftText += `\n`;
+                }
+
+                draftText += `Staff will continue to monitor and provide updates as conditions evolve.\n\nBrooks and Brad`;
+
+                // Send to Gemini for the "Upgrade" polishing
+                const polishedEmail = await callGeminiAPI(`Please professionalize and proofread this draft:\n\n${draftText}`);
+                preview.textContent = polishedEmail;
+            } catch (error) {
+                preview.textContent = "Error generating draft. Please check your connection and try again.";
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic mr-2"></i> Craft Professional Draft';
+            }
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('email-preview').textContent;
+            if (text.includes("Enter details")) return;
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-20');
+            setTimeout(() => toast.classList.add('translate-y-20'), 3000);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
