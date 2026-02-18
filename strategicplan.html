@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Agenda - 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .agenda-item {
+            position: relative;
+            transition: all 0.15s ease-in-out;
+            cursor: default;
+        }
+
+        /* Hover indicator bar */
+        .agenda-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: transparent;
+            transition: background-color 0.15s ease-in-out;
+        }
+
+        /* Policy Hover Effects (Blue) */
+        .policy-item:hover {
+            background-color: #eff6ff;
+        }
+        .policy-item:hover::before {
+            background-color: #2563eb;
+        }
+
+        /* Management Hover Effects (Green) */
+        .management-item:hover {
+            background-color: #ecfdf5;
+        }
+        .management-item:hover::before {
+            background-color: #059669;
+        }
+
+        .policy-card {
+            border-top: 4px solid #2563eb;
+        }
+
+        .management-card {
+            border-top: 4px solid #059669;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 text-slate-900">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 text-center md:text-left">
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Strategic Agenda - 2026</h1>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            
+            <!-- COLUMN 1: POLICY AGENDA -->
+            <div class="space-y-6">
+                <div class="flex items-center space-x-2 mb-2">
+                    <div class="p-2 bg-blue-600 rounded-lg shadow-sm">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wider">Policy Agenda</h2>
+                </div>
+
+                <!-- Policy: Top Priority -->
+                <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden policy-card">
+                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200">
+                        <h3 class="font-bold text-slate-700">Top Priority</h3>
+                    </div>
+                    <div class="flex flex-col divide-y divide-slate-100">
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-700 font-medium">State Legislative Agenda and Advocacy</div>
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-700 font-medium">City Employee Healthcare Cost / Retirement: Direction & Funding</div>
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-700 font-medium">Northeast Development - East Action Plan</div>
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-700 font-medium">Northeast Development - West Action Plan</div>
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-700 font-medium">Downtown Vision and Action Plan: Short-Term Direction & Steps</div>
+                    </div>
+                </section>
+
+                <!-- Policy: High Priority -->
+                <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200">
+                        <h3 class="font-bold text-slate-700">High Priority</h3>
+                    </div>
+                    <div class="flex flex-col divide-y divide-slate-100">
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-600">The District Development Project: PUD Amendment</div>
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-600">Stockwell Project: PUD Amendment & Infrastructure</div>
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-600">Kalahari Land Acquisition</div>
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-600">Driving Progress 2 / Future Road Projects</div>
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-600">City Reuse Water System Expansion: Next Steps</div>
+                        <div class="agenda-item policy-item px-5 py-4 text-slate-600">Highway 79 Expansion Project: Next Steps</div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- COLUMN 2: MANAGEMENT AGENDA -->
+            <div class="space-y-6">
+                <div class="flex items-center space-x-2 mb-2">
+                    <div class="p-2 bg-emerald-600 rounded-lg shadow-sm">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-800 uppercase tracking-wider">Management Agenda</h2>
+                </div>
+
+                <!-- Management: Top Priority -->
+                <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden management-card">
+                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200">
+                        <h3 class="font-bold text-slate-700">Top Priority</h3>
+                    </div>
+                    <div class="flex flex-col divide-y divide-slate-100">
+                        <div class="agenda-item management-item px-5 py-4 text-slate-700 font-medium">IAFF Ballot Measure: Education & Info</div>
+                        <div class="agenda-item management-item px-5 py-4 text-slate-700 font-medium">Contract with Williamson County ESD #9</div>
+                        <div class="agenda-item management-item px-5 py-4 text-slate-700 font-medium">Clay Madsen Recreation Center: Execution & Master Plan</div>
+                        <div class="agenda-item management-item px-5 py-4 text-slate-700 font-medium">Downtown Development: Project Report & Actions</div>
+                        <div class="agenda-item management-item px-5 py-4 text-slate-700 font-medium">District Attorney Follow-Up</div>
+                        <div class="agenda-item management-item px-5 py-4 text-slate-700 font-medium">Forest Creek Golf Club: Options & Next Steps</div>
+                    </div>
+                </section>
+
+                <!-- Management: High Priority -->
+                <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200">
+                        <h3 class="font-bold text-slate-700">High Priority</h3>
+                    </div>
+                    <div class="flex flex-col divide-y divide-slate-100">
+                        <div class="agenda-item management-item px-5 py-4 text-slate-600">Trail Master Plan Update</div>
+                        <div class="agenda-item management-item px-5 py-4 text-slate-600">Water and Wastewater Master Plan Update</div>
+                        <div class="agenda-item management-item px-5 py-4 text-slate-600">Watershed Protection Plan: Brushy Creek Basin</div>
+                        <div class="agenda-item management-item px-5 py-4 text-slate-600">Water/Wastewater Rate Update (Wholesale/Retail)</div>
+                        <div class="agenda-item management-item px-5 py-4 text-slate-600">Downtown Business Attraction Action Plan</div>
+                        <div class="agenda-item management-item px-5 py-4 text-slate-600">Multi-family Policy Amendment</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <footer class="mt-12 pt-6 border-t border-slate-200 text-center text-slate-400 text-sm">
+            <p>&copy; 2026 City of Round Rock</p>
+        </footer>
+    </div>
+</body>
+</html>
