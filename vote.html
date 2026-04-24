@@ -177,6 +177,7 @@
             '163': '18004',
             '180': '18010',
             '181': '18011',
+            '182': '18012',
             '184': '18013',
             '191': '18016',
             '192': '18017',
@@ -354,8 +355,8 @@
             const dailyCounts = {};
             const precinctCounts = {};
 
-            // Daily chart uses all voters to show overall trend, splits by EV/AV, and ignores April 21
-            allVoters.forEach(v => {
+            // Daily chart uses ONLY Round Rock voters to show trend, splits by EV/AV, and ignores April 21
+            rrVoters.forEach(v => {
                 const dateObj = new Date(v.dateStr);
                 // Skip April 21 (Month is 0-indexed, so 3 = April)
                 if (dateObj.getMonth() === 3 && dateObj.getDate() === 21) {
@@ -364,7 +365,7 @@
 
                 const d = v.dateStr || 'Unknown Date';
                 if (!dailyCounts[d]) {
-                    dailyCounts[d] = { EV: 0, AV: 0, Other: 0, timestamp: v.timestamp };
+                    dailyCounts[d] = { date: d, EV: 0, AV: 0, timestamp: v.timestamp };
                 }
 
                 const methodStr = v.method.toUpperCase();
@@ -372,8 +373,6 @@
                     dailyCounts[d].EV++;
                 } else if (methodStr.includes('AV')) {
                     dailyCounts[d].AV++;
-                } else {
-                    dailyCounts[d].Other++;
                 }
             });
 
@@ -396,11 +395,20 @@
                 return 'rgba(148, 163, 184, 0.7)'; // Slate
             });
 
-            // Prepare Daily Chart Data - sort dates chronologically
-            const sortedDates = Object.keys(dailyCounts).sort((a, b) => dailyCounts[a].timestamp - dailyCounts[b].timestamp);
-            const dailyLabels = sortedDates;
-            const evData = sortedDates.map(d => dailyCounts[d].EV);
-            const avData = sortedDates.map(d => dailyCounts[d].AV);
+            // Prepare Daily Chart Data - sort dates chronologically and store master data
+            window.masterDailyData = Object.values(dailyCounts).sort((a, b) => a.timestamp - b.timestamp);
+            
+            const initialLabels = [];
+            const initialEVData = [];
+            const initialAVData = [];
+
+            window.masterDailyData.forEach(day => {
+                if (day.EV > 0 || day.AV > 0) {
+                    initialLabels.push(day.date);
+                    initialEVData.push(day.EV);
+                    initialAVData.push(day.AV);
+                }
+            });
 
             // Render Daily Chart
             const ctxDaily = document.getElementById('dailyChart').getContext('2d');
@@ -408,17 +416,17 @@
             dailyChartInstance = new Chart(ctxDaily, {
                 type: 'bar',
                 data: {
-                    labels: dailyLabels,
+                    labels: initialLabels,
                     datasets: [
                         {
                             label: 'Early Voters (EV)',
-                            data: evData,
+                            data: initialEVData,
                             backgroundColor: 'rgba(37, 99, 235, 0.8)', // Blue
                             borderRadius: 4
                         },
                         {
                             label: 'Absentee Voters (AV)',
-                            data: avData,
+                            data: initialAVData,
                             backgroundColor: 'rgba(245, 158, 11, 0.8)', // Amber
                             borderRadius: 4
                         }
@@ -427,7 +435,47 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: true, position: 'top' } },
+                    plugins: { 
+                        legend: { 
+                            display: true, 
+                            position: 'top',
+                            onClick: function(e, legendItem, legend) {
+                                const index = legendItem.datasetIndex;
+                                const chart = legend.chart;
+                                
+                                // Toggle visibility state natively
+                                chart.setDatasetVisibility(index, !chart.isDatasetVisible(index));
+                                
+                                // Check what is currently visible after toggle
+                                const isEVVisible = chart.isDatasetVisible(0);
+                                const isAVVisible = chart.isDatasetVisible(1);
+
+                                const filteredLabels = [];
+                                const filteredEV = [];
+                                const filteredAV = [];
+
+                                // Re-filter data to only show dates with available data for visible categories
+                                window.masterDailyData.forEach(day => {
+                                    let totalVisible = 0;
+                                    if (isEVVisible) totalVisible += day.EV;
+                                    if (isAVVisible) totalVisible += day.AV;
+                                    
+                                    if (totalVisible > 0) {
+                                        filteredLabels.push(day.date);
+                                        filteredEV.push(day.EV);
+                                        filteredAV.push(day.AV);
+                                    }
+                                });
+
+                                // Update chart with filtered arrays
+                                chart.data.labels = filteredLabels;
+                                chart.data.datasets[0].data = filteredEV;
+                                chart.data.datasets[1].data = filteredAV;
+                                
+                                chart.update();
+                            }
+                        } 
+                    },
                     scales: {
                         y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' } },
                         x: { stacked: true, grid: { display: false } }
