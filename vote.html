@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Round Rock Election Analyzer</title>
+    
+    <!-- Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Load Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Load PapaParse for robust CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <!-- Load SheetJS for Excel (.xlsx) parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        
+        /* Fade-in animation for UI transitions */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    <h1 class="text-xl font-bold text-slate-900">Round Rock Voter Analysis</h1>
+                </div>
+                <div>
+                    <label for="csv-upload" class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Upload Voter Data
+                    </label>
+                    <input type="file" id="csv-upload" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)" />
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Initial Empty State -->
+    <div id="empty-state" class="max-w-7xl mx-auto px-4 mt-20 text-center">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 max-w-2xl mx-auto">
+            <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">No Data Loaded</h2>
+            <p class="text-slate-500 mb-6">Upload your voter spreadsheet (.xlsx or .csv) to generate the Round Rock dashboard. The file should contain VUID, Name, Precinct, Election Name, Voting Method, and Ballot Date.</p>
+            <button onclick="document.getElementById('csv-upload').click()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-2 px-6 rounded-lg border border-slate-300 transition-colors">
+                Browse Files
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (Hidden initially) -->
+    <main id="dashboard" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden fade-in">
+        
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-l-4 border-l-blue-500">
+                <p class="text-sm font-medium text-slate-500 mb-1">Total Voters Processed</p>
+                <p class="text-3xl font-bold text-slate-900" id="kpi-total">0</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-l-4 border-l-green-500">
+                <p class="text-sm font-medium text-slate-500 mb-1">Round Rock Precincts</p>
+                <p class="text-3xl font-bold text-slate-900" id="kpi-primary">0</p>
+                <p class="text-xs text-slate-400 mt-1" id="kpi-primary-pct">0% of total</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-l-4 border-l-slate-400">
+                <p class="text-sm font-medium text-slate-500 mb-1">Other Precincts</p>
+                <p class="text-3xl font-bold text-slate-900" id="kpi-other">0</p>
+                <p class="text-xs text-slate-400 mt-1" id="kpi-other-pct">0% of total</p>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Daily Trends Chart -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-2">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Voters Per Day</h3>
+                <div class="relative h-72 w-full">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Precinct Breakdown Chart -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Top 10 Round Rock Precincts</h3>
+                <div class="relative h-72 w-full">
+                    <canvas id="precinctChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Table Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-5 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <h3 class="text-lg font-bold text-slate-800">Round Rock Voter Database</h3>
+                <div class="relative w-full sm:w-72">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="Search by name or VUID..." class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow" onkeyup="handleSearch()">
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">VUID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Precinct</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Classification</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Method</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="voterTableBody" class="bg-white divide-y divide-slate-200">
+                        <!-- Table rows generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination Controls -->
+            <div class="bg-white px-4 py-3 border-t border-slate-200 flex items-center justify-between sm:px-6">
+                <div class="text-sm text-slate-700" id="table-info">
+                    Showing 0 to 0 of 0 results
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="changePage(-1)" id="btn-prev" class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                    <button onclick="changePage(1)" id="btn-next" class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Round Rock Precinct Definitions ---
+        const RR_PRECINCTS = ['119', '123', '139', '143', '144', '145', '149', '150', '155', '163', '180', '181', '184', '191', '192', '424', '433', '482', '485', '487', '488', '489', '491'];
+
+        // --- Application State ---
+        let allVoters = [];        // Holds all processed objects
+        let rrVoters = [];         // Holds ONLY Round Rock voters
+        let filteredVoters = [];   // Holds search results (from rrVoters)
+        let currentPage = 1;
+        const ROWS_PER_PAGE = 50;
+
+        // Chart instances
+        let dailyChartInstance = null;
+        let precinctChartInstance = null;
+
+        // --- Data Processing Functions ---
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Reset UI and state
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            // Show loading state on KPI
+            document.getElementById('kpi-total').innerText = 'Loading...';
+
+            const fileExt = file.name.split('.').pop().toLowerCase();
+
+            if (fileExt === 'csv') {
+                // Fallback for CSV files
+                Papa.parse(file, {
+                    header: false,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        processParsedData(results.data);
+                    },
+                    error: function(error) {
+                        alert('Error parsing CSV file: ' + error.message);
+                    }
+                });
+            } else {
+                // Handle XLSX and XLS files via SheetJS
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        
+                        // Get first worksheet
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        // Convert to array of arrays, extracting formatted strings (important for dates)
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1, raw: false, defval: ""});
+                        
+                        processParsedData(jsonData);
+                    } catch (error) {
+                        alert('Error parsing Excel file: ' + error.message);
+                        document.getElementById('kpi-total').innerText = 'Error';
+                    }
+                };
+                reader.onerror = function() {
+                    alert('Error reading the Excel file.');
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function processParsedData(rawData) {
+            allVoters = [];
+            
+            // Determine if first row is header
+            let startIndex = 0;
+            const firstRow = rawData[0];
+            if (firstRow && (String(firstRow[0]).toLowerCase().includes('vuid') || isNaN(parseInt(firstRow[0])))) {
+                startIndex = 1;
+            }
+
+            for (let i = startIndex; i < rawData.length; i++) {
+                const row = rawData[i];
+                // Expecting: VUID, Name, Precinct, Election Name, Voting Method, Ballot Date
+                
+                if (row.length < 6) continue; // Skip malformed rows
+
+                const vuid = String(row[0]).trim();
+                if (!vuid) continue; // Skip totally empty rows read by SheetJS
+
+                const name = String(row[1]).trim().replace(/['"]/g, ''); // Clean quotes
+                const precinct = String(row[2]).trim();
+                const election = String(row[3]).trim();
+                const method = String(row[4]).trim();
+                let dateStr = String(row[5]).trim();
+
+                // Clean up dates that might have been formatted as M,DD,YY instead of M/DD/YY
+                // If it looks like 10,24,24 we replace commas with slashes.
+                if (dateStr.includes(',') && !dateStr.includes('/')) {
+                    dateStr = dateStr.replace(/,/g, '/');
+                }
+
+                // Categorize Precinct
+                let category = 'Other';
+                let categoryBadge = 'bg-slate-100 text-slate-800';
+                
+                if (RR_PRECINCTS.includes(precinct)) {
+                    category = 'Round Rock';
+                    categoryBadge = 'bg-green-100 text-green-800';
+                }
+
+                allVoters.push({
+                    vuid,
+                    name,
+                    precinct,
+                    election,
+                    method,
+                    dateStr,
+                    category,
+                    categoryBadge,
+                    // Parse date for sorting. Format assumed M/DD/YY or similar
+                    timestamp: new Date(dateStr).getTime() || 0
+                });
+            }
+
+            // Sort by Date ascending
+            allVoters.sort((a, b) => a.timestamp - b.timestamp);
+            
+            // Filter to only include Round Rock voters for the table and precinct chart
+            rrVoters = allVoters.filter(v => v.category === 'Round Rock');
+            
+            // Initialize search pool with only Round Rock voters
+            filteredVoters = [...rrVoters];
+            currentPage = 1;
+
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            // Calculate KPIs
+            const total = allVoters.length;
+            const primaryCount = allVoters.filter(v => v.category === 'Round Rock').length;
+            const otherCount = total - primaryCount;
+
+            document.getElementById('kpi-total').innerText = total.toLocaleString();
+            document.getElementById('kpi-primary').innerText = primaryCount.toLocaleString();
+            document.getElementById('kpi-other').innerText = otherCount.toLocaleString();
+
+            document.getElementById('kpi-primary-pct').innerText = `${((primaryCount/total)*100 || 0).toFixed(1)}% of total`;
+            document.getElementById('kpi-other-pct').innerText = `${((otherCount/total)*100 || 0).toFixed(1)}% of total`;
+
+            renderCharts();
+            renderTable();
+        }
+
+        function renderCharts() {
+            // Aggregations
+            const dailyCounts = {};
+            const precinctCounts = {};
+
+            // Daily chart uses all voters to show overall trend
+            allVoters.forEach(v => {
+                const d = v.dateStr || 'Unknown Date';
+                dailyCounts[d] = (dailyCounts[d] || 0) + 1;
+            });
+
+            // Precinct chart ONLY uses Round Rock voters
+            rrVoters.forEach(v => {
+                const p = v.precinct || 'Unknown';
+                precinctCounts[p] = (precinctCounts[p] || 0) + 1;
+            });
+
+            // Prepare Daily Chart Data
+            const dailyLabels = Object.keys(dailyCounts);
+            const dailyData = Object.values(dailyCounts);
+
+            // Prepare Precinct Chart Data (Top 10)
+            const sortedPrecincts = Object.entries(precinctCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            const precinctLabels = sortedPrecincts.map(item => `Pct ${item[0]}`);
+            const precinctData = sortedPrecincts.map(item => item[1]);
+            const precinctColors = sortedPrecincts.map(item => {
+                const p = item[0];
+                if (RR_PRECINCTS.includes(p)) return 'rgba(34, 197, 94, 0.7)'; // Green
+                return 'rgba(148, 163, 184, 0.7)'; // Slate
+            });
+
+            // Render Daily Chart
+            const ctxDaily = document.getElementById('dailyChart').getContext('2d');
+            if (dailyChartInstance) dailyChartInstance.destroy();
+            dailyChartInstance = new Chart(ctxDaily, {
+                type: 'line',
+                data: {
+                    labels: dailyLabels,
+                    datasets: [{
+                        label: 'Voters per Day',
+                        data: dailyData,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#2563eb',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Render Precinct Chart
+            const ctxPrecinct = document.getElementById('precinctChart').getContext('2d');
+            if (precinctChartInstance) precinctChartInstance.destroy();
+            precinctChartInstance = new Chart(ctxPrecinct, {
+                type: 'bar',
+                data: {
+                    labels: precinctLabels,
+                    datasets: [{
+                        label: 'Total Voters',
+                        data: precinctData,
+                        backgroundColor: precinctColors,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('voterTableBody');
+            tbody.innerHTML = '';
+
+            const startIdx = (currentPage - 1) * ROWS_PER_PAGE;
+            const endIdx = Math.min(startIdx + ROWS_PER_PAGE, filteredVoters.length);
+            const pageData = filteredVoters.slice(startIdx, endIdx);
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">No voters found matching criteria.</td></tr>`;
+            } else {
+                pageData.forEach(voter => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">${voter.vuid}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">${voter.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 font-semibold">${voter.precinct}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${voter.categoryBadge}">
+                                ${voter.category}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">${voter.method}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">${voter.dateStr}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Update Pagination info
+            document.getElementById('table-info').innerText = `Showing ${filteredVoters.length > 0 ? startIdx + 1 : 0} to ${endIdx} of ${filteredVoters.length} entries`;
+            document.getElementById('btn-prev').disabled = currentPage === 1;
+            document.getElementById('btn-next').disabled = endIdx >= filteredVoters.length;
+        }
+
+        function handleSearch() {
+            const term = document.getElementById('searchInput').value.toLowerCase().trim();
+            
+            if (term === '') {
+                filteredVoters = [...rrVoters];
+            } else {
+                filteredVoters = rrVoters.filter(v => 
+                    v.name.toLowerCase().includes(term) || 
+                    v.vuid.toLowerCase().includes(term)
+                );
+            }
+            
+            currentPage = 1; // reset to first page on new search
+            renderTable();
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            renderTable();
+        }
+
+    </script>
+</body>
+</html>
