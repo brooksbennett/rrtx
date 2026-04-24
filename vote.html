@@ -180,6 +180,12 @@
             '184': '18013',
             '191': '18016',
             '192': '18017',
+            '318': '18077',
+            '319': '18078',
+            '322': '18081',
+            '333': '18086',
+            '338': '18087',
+            '338': '18087',
             '424': '18135',
             '433': '18139',
             '482': '17975',
@@ -445,10 +451,38 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                footer: function() {
+                                    return 'Click bar to view map';
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
                         x: { grid: { display: false } }
+                    },
+                    onHover: (event, chartElement) => {
+                        // Change cursor to pointer when hovering over a bar
+                        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                    },
+                    onClick: (event, elements, chart) => {
+                        // Open map link if a bar is clicked
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const label = chart.data.labels[index];
+                            const precinctNum = label.replace('Pct ', ''); // Extract number from "Pct 119"
+
+                            let mapLink = "https://www.wilcotx.gov/190/Maps"; // Fallback
+                            const docId = PRECINCT_DOC_IDS[precinctNum];
+                            if (docId && docId !== 'XXXXX') {
+                                mapLink = `https://www.wilcotx.gov/DocumentCenter/View/${docId}/177pcts_2026_mapbook_8_5x11_${precinctNum}`;
+                            }
+                            window.open(mapLink, '_blank');
+                        }
                     }
                 }
             });
