@@ -440,20 +440,28 @@
 
         // --- Core Analytics Functions ---
         
-        // Calculates Day 1, Day 2, Day 3 cumulative totals for velocity chart
+        // Calculates cumulative totals for velocity chart
         function calculateCumulativeVelocity(voterArray) {
             const dailyCounts = {};
             voterArray.forEach(v => {
                 const methodStr = (v.method || '').toUpperCase();
                 if (methodStr.includes('AV') || methodStr.includes('AB')) return; // Skip absentee/mail ballots
 
-                const dateObj = new Date(v.dateStr);
-                // Skip April 21 universally (San Jacinto Day / Sunday non-voting issue)
-                if (dateObj.getMonth() === 3 && dateObj.getDate() === 21) return;
+                // Parse safely to avoid timezone shift on YYYY-MM-DD strings
+                const dateObj = new Date(v.dateStr.replace(/-/g, '/'));
+                
+                // Skip Sundays universally (0 = Sunday in JS)
+                if (dateObj.getDay() === 0) return;
+
+                // Skip April 21, 2026 (San Jacinto Day)
+                if (dateObj.getFullYear() === 2026 && dateObj.getMonth() === 3 && dateObj.getDate() === 21) return;
 
                 const d = v.dateStr;
-                if (!dailyCounts[d]) dailyCounts[d] = { count: 0, timestamp: v.timestamp, date: d };
+                if (!dailyCounts[d]) dailyCounts[d] = { count: 0, timestamp: v.timestamp, date: d, isED: false };
                 dailyCounts[d].count++;
+
+                // Flag if this date is Election Day
+                if (methodStr.includes('ED')) dailyCounts[d].isED = true;
             });
 
             // Sort dates chronologically
@@ -463,8 +471,16 @@
             const velocityArray = [];
             sortedDays.forEach((day, index) => {
                 runningTotal += day.count;
+                let isElectionDay = day.isED;
+                
+                // Automatically flag Election Day if there is a gap >= 3 days from the previous voting date
+                if (index > 0 && !isElectionDay) {
+                    const gapDays = Math.round((day.timestamp - sortedDays[index-1].timestamp) / 86400000);
+                    if (gapDays >= 3) isElectionDay = true;
+                }
+
                 velocityArray.push({
-                    dayNumber: index + 1,
+                    isED: isElectionDay,
                     date: day.date,
                     cumulativeTotal: runningTotal
                 });
@@ -495,19 +511,27 @@
         }
 
         function renderCharts() {
-            // 1. Daily Chart Data (EV/AV Split)
+            // 1. Daily Chart Data (EV/AV/ED Split)
             const dailyCounts = {};
             const precinctCounts = {};
 
             rrVoters.forEach(v => {
-                const dateObj = new Date(v.dateStr);
-                if (dateObj.getMonth() === 3 && dateObj.getDate() === 21) return;
+                // Parse safely to avoid timezone shift on YYYY-MM-DD strings
+                const dateObj = new Date(v.dateStr.replace(/-/g, '/'));
+                
+                // Skip Sundays universally (0 = Sunday in JS)
+                if (dateObj.getDay() === 0) return;
+
+                // Skip April 21, 2026 (San Jacinto Day)
+                if (dateObj.getFullYear() === 2026 && dateObj.getMonth() === 3 && dateObj.getDate() === 21) return;
 
                 const d = v.dateStr || 'Unknown Date';
-                if (!dailyCounts[d]) dailyCounts[d] = { date: d, EV: 0, AV: 0, timestamp: v.timestamp };
+                if (!dailyCounts[d]) dailyCounts[d] = { date: d, EV: 0, AV: 0, ED: 0, timestamp: v.timestamp };
 
-                if (v.method.toUpperCase().includes('EV')) dailyCounts[d].EV++;
-                else if (v.method.toUpperCase().includes('AV')) dailyCounts[d].AV++;
+                const methodStr = (v.method || '').toUpperCase();
+                if (methodStr.includes('EV')) dailyCounts[d].EV++;
+                else if (methodStr.includes('AV') || methodStr.includes('AB')) dailyCounts[d].AV++;
+                else if (methodStr.includes('ED')) dailyCounts[d].ED++;
                 else dailyCounts[d].EV++; // Default to EV if unknown
                 
                 // Tally Precincts
@@ -519,12 +543,14 @@
             const currentLabels = [];
             const currentEVData = [];
             const currentAVData = [];
+            const currentEDData = [];
 
             window.masterDailyData.forEach(day => {
-                if (day.EV > 0 || day.AV > 0) {
+                if (day.EV > 0 || day.AV > 0 || day.ED > 0) {
                     currentLabels.push(day.date);
                     currentEVData.push(day.EV);
                     currentAVData.push(day.AV);
+                    currentEDData.push(day.ED);
                 }
             });
 
@@ -536,7 +562,8 @@
                     labels: currentLabels,
                     datasets: [
                         { label: 'Early Voters', data: currentEVData, backgroundColor: '#2563eb', borderRadius: 4 },
-                        { label: 'Absentee Voters', data: currentAVData, backgroundColor: '#f59e0b', borderRadius: 4 }
+                        { label: 'Absentee/Mail', data: currentAVData, backgroundColor: '#f59e0b', borderRadius: 4 },
+                        { label: 'Election Day', data: currentEDData, backgroundColor: '#10b981', borderRadius: 4 }
                     ]
                 },
                 options: {
@@ -551,17 +578,25 @@
                                 
                                 const isEV = chart.isDatasetVisible(0);
                                 const isAV = chart.isDatasetVisible(1);
-                                const fLabels = [], fEV = [], fAV = [];
+                                const isED = chart.isDatasetVisible(2);
+                                const fLabels = [], fEV = [], fAV = [], fED = [];
 
                                 window.masterDailyData.forEach(day => {
                                     let visible = 0;
                                     if (isEV) visible += day.EV;
                                     if (isAV) visible += day.AV;
-                                    if (visible > 0) { fLabels.push(day.date); fEV.push(day.EV); fAV.push(day.AV); }
+                                    if (isED) visible += day.ED;
+                                    if (visible > 0) { 
+                                        fLabels.push(day.date); 
+                                        fEV.push(day.EV); 
+                                        fAV.push(day.AV); 
+                                        fED.push(day.ED); 
+                                    }
                                 });
                                 chart.data.labels = fLabels;
                                 chart.data.datasets[0].data = fEV;
                                 chart.data.datasets[1].data = fAV;
+                                chart.data.datasets[2].data = fED;
                                 chart.update();
                             }
                         } 
@@ -605,35 +640,62 @@
 
             // 3. Velocity Chart (Speed of Votes)
             const currentVelocity = calculateCumulativeVelocity(rrVoters);
+            
+            // Find maximum Early Voting days required across all datasets
+            let maxEVDays = 0;
+            const allSeries = [currentVelocity, ...Array.from(historicalVelocityData.values())];
+            allSeries.forEach(series => {
+                const evCount = series.filter(p => !p.isED).length;
+                if (evCount > maxEVDays) maxEVDays = evCount;
+            });
+
+            // Build standard Axis: Day 1...N, ending with Election Day
+            const dayLabels = Array.from({length: maxEVDays}, (_, i) => `Day ${i + 1}`);
+            dayLabels.push('Election Day');
+
+            // Maps dynamic days strictly to the X-Axis columns to cleanly bridge gap days
+            function mapSeriesToData(series) {
+                const data = new Array(maxEVDays + 1).fill(null);
+                let evIndex = 0;
+                series.forEach(p => {
+                    if (p.isED) {
+                        data[maxEVDays] = p.cumulativeTotal; // Anchor strictly to Election Day
+                    } else {
+                        if (evIndex < maxEVDays) {
+                            data[evIndex++] = p.cumulativeTotal;
+                        }
+                    }
+                });
+                return data;
+            }
+
             const velocityDatasets = [{
                 label: 'Current Election',
-                data: currentVelocity.map(v => v.cumulativeTotal),
+                data: mapSeriesToData(currentVelocity),
                 borderColor: '#2563eb',
                 backgroundColor: 'rgba(37, 99, 235, 0.1)',
                 borderWidth: 3,
                 tension: 0.3,
-                fill: true
+                fill: true,
+                spanGaps: true
             }];
 
             const colors = ['#94a3b8', '#f87171', '#34d399', '#a78bfa'];
-            let maxDays = currentVelocity.length;
 
             let colorIdx = 0;
             historicalVelocityData.forEach((dataArray, elecName) => {
-                if(dataArray.length > maxDays) maxDays = dataArray.length;
                 velocityDatasets.push({
                     label: elecName.replace(' GENERAL ELECTION', ''), // Shorten names for legend
-                    data: dataArray.map(v => v.cumulativeTotal),
+                    data: mapSeriesToData(dataArray),
                     borderColor: colors[colorIdx % colors.length],
                     borderWidth: 2,
                     borderDash: [5, 5],
                     tension: 0.3,
-                    fill: false
+                    fill: false,
+                    spanGaps: true
                 });
                 colorIdx++;
             });
-
-            const dayLabels = Array.from({length: maxDays}, (_, i) => `Day ${i + 1}`);
 
             const ctxVelocity = document.getElementById('velocityChart').getContext('2d');
             if (velocityChartInstance) velocityChartInstance.destroy();
