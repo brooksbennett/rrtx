@@ -821,12 +821,19 @@
         }
 
         function handleSearch() {
-            const term = document.getElementById('searchInput').value.toLowerCase().trim();
+            const rawTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            // Replace commas with spaces, then split into individual search words
+            const searchTerms = rawTerm.replace(/,/g, ' ').split(/\s+/).filter(t => t.length > 0);
             
             filteredVoters = rrVoters.filter(v => {
-                const safeName = v.name || '';
-                const safeVuid = v.vuid || '';
-                const matchesSearch = term === '' || safeName.toLowerCase().includes(term) || safeVuid.toLowerCase().includes(term);
+                const safeName = (v.name || '').toLowerCase().replace(/,/g, ' ');
+                const safeVuid = (v.vuid || '').toLowerCase();
+                
+                // A voter matches if EVERY typed word is found somewhere in their name or VUID
+                const matchesSearch = searchTerms.length === 0 || searchTerms.every(term => 
+                    safeName.includes(term) || safeVuid.includes(term)
+                );
+                
                 const matchesPrecinct = selectedPrecincts.has(String(v.precinct).trim());
 
                 return matchesSearch && matchesPrecinct;
