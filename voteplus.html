@@ -88,18 +88,30 @@
     <!-- Main Dashboard (Hidden initially) -->
     <main id="dashboard" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden fade-in">
         
+        <!-- Controls Row -->
+        <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold text-slate-800 px-2" id="dashboard-title">Dashboard Overview</h2>
+            <div class="flex items-center gap-3">
+                <span class="text-sm font-semibold text-slate-700">Include Split Precincts <span class="font-normal text-slate-500 hidden sm:inline">(390, 419, 422, 490)</span></span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="splitToggle" class="sr-only peer" onchange="toggleSplitPrecincts(this.checked)">
+                  <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+        </div>
+
         <!-- KPI Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-l-4 border-l-blue-500">
                 <p class="text-sm font-medium text-slate-500 mb-1">Total Voters Processed</p>
                 <p class="text-3xl font-bold text-slate-900" id="kpi-total">0</p>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-l-4 border-l-green-500">
-                <p class="text-sm font-medium text-slate-500 mb-1">Round Rock Precincts</p>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-l-4 border-l-green-500 transition-colors duration-300" id="kpi-card-active">
+                <p class="text-sm font-medium text-slate-500 mb-1" id="kpi-title-primary">Round Rock Precincts</p>
                 <p class="text-3xl font-bold text-slate-900" id="kpi-primary">0</p>
                 <p class="text-xs text-slate-400 mt-1" id="kpi-primary-pct">0% of total</p>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-l-4 border-l-slate-400">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 border-l-4 border-l-slate-400 transition-colors duration-300" id="kpi-card-other">
                 <p class="text-sm font-medium text-slate-500 mb-1">Other Precincts</p>
                 <p class="text-3xl font-bold text-slate-900" id="kpi-other">0</p>
                 <p class="text-xs text-slate-400 mt-1" id="kpi-other-pct">0% of total</p>
@@ -110,7 +122,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <!-- Daily Trends Chart -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-2">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Round Rock Voters Per Day (Current)</h3>
+                <h3 class="text-lg font-bold text-slate-800 mb-4" id="daily-chart-title">Round Rock Voters Per Day (Current)</h3>
                 <div class="relative h-72 w-full">
                     <canvas id="dailyChart"></canvas>
                 </div>
@@ -118,7 +130,7 @@
             
             <!-- Precinct Breakdown Chart -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Top 10 Round Rock Precincts</h3>
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Top 10 Active Precincts</h3>
                 <div class="relative h-72 w-full">
                     <canvas id="precinctChart"></canvas>
                 </div>
@@ -150,7 +162,7 @@
         <!-- Search and Table Section -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="p-5 border-b border-slate-200 bg-slate-50 flex flex-col lg:flex-row justify-between items-center gap-4">
-                <h3 class="text-lg font-bold text-slate-800 w-full lg:w-auto">Round Rock Voter Database</h3>
+                <h3 class="text-lg font-bold text-slate-800 w-full lg:w-auto">Voter Database</h3>
                 
                 <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto justify-end">
                     <!-- Multi-select Precinct Dropdown -->
@@ -220,8 +232,9 @@
         // Register Chart.js DataLabels Plugin globally
         Chart.register(ChartDataLabels);
 
-        // --- Round Rock Precinct Definitions ---
-        const RR_PRECINCTS = ['119', '123', '135', '139', '143', '144', '145', '149', '150', '155', '163', '180', '181', '182', '184', '191', '192', '318', '319', '322', '333', '338', '424', '433', '482', '485', '486', '487', '488', '489', '491'];
+        // --- Precinct Definitions ---
+        const RR_PRECINCTS = ['119', '123', '135', '139', '145', '149', '150', '155', '163', '180', '181', '182', '184', '192', '318', '319', '321', '322', '323', '333', '338', '424', '433', '482', '485', '486', '488', '489', '491'];
+        const SPLIT_PRECINCTS = ['390', '419', '422', '490'];
 
         // --- Precinct to DocumentCenter ID Map ---
         const PRECINCT_DOC_IDS = {
@@ -245,9 +258,14 @@
             '192': '18017',
             '318': '18077',
             '319': '18078',
+            '321': 'XXXXX',
             '322': '18081',
+            '323': 'XXXXX',
             '333': '18086',
             '338': '18087',
+            '390': 'XXXXX',
+            '419': 'XXXXX',
+            '422': 'XXXXX',
             '424': '18135',
             '433': '18139',
             '482': '17975',
@@ -256,6 +274,7 @@
             '487': '17979',
             '488': '17980',
             '489': '17981',
+            '490': 'XXXXX',
             '491': '17983'
         };
 
@@ -264,6 +283,7 @@
         let rrVoters = [];         
         let filteredVoters = [];   
         let selectedPrecincts = new Set(RR_PRECINCTS); 
+        let includeSplitPrecincts = false; // Toggle state
         
         let currentPage = 1;
         const ROWS_PER_PAGE = 50;
@@ -273,7 +293,8 @@
         // Historical Context State
         let currentElectionName = "Current Election";
         let historicalVoterMap = new Map(); // Maps VUID to a Set of historical Election Names
-        let historicalVelocityData = new Map(); // Maps Election Name to an array of objects {date, cumulativeSum, dayNumber}
+        let rawHistoricalData = []; // Raw historical row data for recalculating
+        let historicalVelocityData = new Map(); // Maps Election Name to velocity calculations
         let historicalElectionsSet = new Set(); // Names of all processed historical elections
 
         // Chart instances
@@ -281,6 +302,45 @@
         let precinctChartInstance = null;
         let velocityChartInstance = null;
         let historyProfileChartInstance = null;
+
+        // Triggered when toggle switch is clicked
+        function toggleSplitPrecincts(isChecked) {
+            includeSplitPrecincts = isChecked;
+            
+            // Update UI styling for clarity
+            document.getElementById('kpi-title-primary').innerText = includeSplitPrecincts ? "Round Rock & Split Pcts" : "Round Rock Precincts";
+            document.getElementById('daily-chart-title').innerText = includeSplitPrecincts ? "Active Voters Per Day (RR & Split)" : "Round Rock Voters Per Day (Current)";
+            
+            if (includeSplitPrecincts) {
+                document.getElementById('kpi-card-active').classList.replace('border-l-green-500', 'border-l-indigo-500');
+            } else {
+                document.getElementById('kpi-card-active').classList.replace('border-l-indigo-500', 'border-l-green-500');
+            }
+
+            applyDataScope();
+        }
+
+        // Re-filters data globally based on the split toggle
+        function applyDataScope() {
+            if (allVoters.length === 0) return;
+
+            rrVoters = allVoters.filter(v => v.category === 'Round Rock' || (includeSplitPrecincts && v.category === 'Split'));
+            filteredVoters = [...rrVoters];
+            
+            const activePrecincts = includeSplitPrecincts ? [...RR_PRECINCTS, ...SPLIT_PRECINCTS] : [...RR_PRECINCTS];
+            selectedPrecincts = new Set(activePrecincts);
+            
+            currentPage = 1;
+            renderPrecinctFilters();
+            
+            if (historicalElectionsSet.size > 0) {
+                refreshHistoricalVelocity();
+            }
+            
+            updateDashboard();
+            updateSortIcons();
+            handleSearch();
+        }
 
         function handleFileUpload(event, type) {
             const file = event.target.files[0];
@@ -331,8 +391,7 @@
         function processParsedData(rawData, type) {
             if (!rawData || rawData.length < 2) return;
 
-            // 1. DYNAMIC COLUMN MAPPING
-            // Examine the first row to figure out which column is which
+            // DYNAMIC COLUMN MAPPING
             const headers = rawData[0].map(h => String(h).toLowerCase().replace(/[^a-z0-9]/g, ''));
             
             let idxVuid = headers.findIndex(h => h.includes('vuid'));
@@ -342,24 +401,21 @@
             let idxDate = headers.findIndex(h => h.includes('date'));
             let idxMethod = headers.findIndex(h => h.includes('method') || h.includes('type') || h.includes('ev'));
 
-            // Fallback mapping if headers aren't detected clearly (assumes standard 6-column format)
             if (idxVuid === -1) idxVuid = 0;
             if (idxName === -1) idxName = 1;
-            if (idxPrecinct === -1) idxPrecinct = 2; // Default to old format
+            if (idxPrecinct === -1) idxPrecinct = 2;
             if (idxElection === -1) idxElection = 3;
             if (idxMethod === -1) idxMethod = 4;
             if (idxDate === -1) idxDate = 5;
 
-            // Adjust fallback if the sample historical format is detected (Precinct at idx 3)
             if (idxPrecinct === 2 && String(rawData[1][3]).match(/^\d{3}(\.\d)?$/)) {
                 idxPrecinct = 3;
                 idxElection = 2;
             }
 
-            let startIndex = 1; // Assume row 0 is header
+            let startIndex = 1; 
 
             let tempCurrentVoters = [];
-            let rawVelocityData = []; // To collect rows for velocity processing
 
             for (let i = startIndex; i < rawData.length; i++) {
                 const row = rawData[i];
@@ -370,8 +426,6 @@
 
                 const name = String(row[idxName] || '').trim().replace(/['"]/g, ''); 
                 let precinct = String(row[idxPrecinct] || '').trim();
-                
-                // Strip decimal from precinct if present (e.g., "145.0" -> "145")
                 if(precinct.endsWith('.0')) precinct = precinct.slice(0, -2);
                 
                 const election = String(row[idxElection] || '').trim();
@@ -382,23 +436,23 @@
                     dateStr = dateStr.replace(/,/g, '/');
                 }
 
-                // Check if this voter is in Round Rock
                 const isRR = RR_PRECINCTS.includes(precinct);
+                const isSplit = SPLIT_PRECINCTS.includes(precinct);
 
                 if (type === 'current') {
                     if(tempCurrentVoters.length === 0 && election) currentElectionName = election;
                     
-                    let category = isRR ? 'Round Rock' : 'Other';
+                    let category = isRR ? 'Round Rock' : (isSplit ? 'Split' : 'Other');
                     
                     tempCurrentVoters.push({
                         vuid, name, precinct, election, method, dateStr, category,
                         timestamp: new Date(dateStr).getTime() || 0,
-                        historyScore: 0 // Will be calculated later
+                        historyScore: 0 
                     });
                 } 
                 else if (type === 'historical') {
-                    // Only track historical data for Round Rock precincts
-                    if (isRR) {
+                    // Only process historical for RR or Split
+                    if (isRR || isSplit) {
                         historicalElectionsSet.add(election);
                         
                         if (!historicalVoterMap.has(vuid)) {
@@ -406,7 +460,11 @@
                         }
                         historicalVoterMap.get(vuid).add(election);
 
-                        rawVelocityData.push({ election, dateStr, method, timestamp: new Date(dateStr).getTime() || 0 });
+                        rawHistoricalData.push({ 
+                            election, dateStr, method, 
+                            category: isRR ? 'Round Rock' : 'Split',
+                            timestamp: new Date(dateStr).getTime() || 0 
+                        });
                     }
                 }
             }
@@ -414,45 +472,35 @@
             if (type === 'current') {
                 allVoters = tempCurrentVoters;
                 allVoters.sort((a, b) => a.timestamp - b.timestamp);
-                
-                rrVoters = allVoters.filter(v => v.category === 'Round Rock');
-                filteredVoters = [...rrVoters];
-                
-                currentPage = 1;
-                selectedPrecincts = new Set(RR_PRECINCTS);
-                renderPrecinctFilters();
+                applyDataScope(); 
             } 
             else if (type === 'historical') {
-                // Process raw historical rows into daily cumulative velocities
-                historicalElectionsSet.forEach(elecName => {
-                    const elecRows = rawVelocityData.filter(r => r.election === elecName);
-                    historicalVelocityData.set(elecName, calculateCumulativeVelocity(elecRows));
-                });
-                
+                refreshHistoricalVelocity();
                 document.getElementById('historical-btn-text').innerText = `Added ${historicalElectionsSet.size} Past Elections`;
                 document.getElementById('historical-badge').innerText = `${historicalElectionsSet.size} Past Elections Loaded`;
                 document.getElementById('historical-badge').className = "text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded border border-indigo-200";
+                updateDashboard();
             }
-
-            updateDashboard();
-            updateSortIcons();
         }
 
         // --- Core Analytics Functions ---
+
+        function refreshHistoricalVelocity() {
+            historicalVelocityData.clear();
+            historicalElectionsSet.forEach(elecName => {
+                const elecRows = rawHistoricalData.filter(r => r.election === elecName && (r.category === 'Round Rock' || (includeSplitPrecincts && r.category === 'Split')));
+                historicalVelocityData.set(elecName, calculateCumulativeVelocity(elecRows));
+            });
+        }
         
-        // Calculates cumulative totals for velocity chart
         function calculateCumulativeVelocity(voterArray) {
             const dailyCounts = {};
             voterArray.forEach(v => {
                 const methodStr = (v.method || '').toUpperCase();
                 if (methodStr.includes('AV') || methodStr.includes('AB')) return; // Skip absentee/mail ballots
 
-                // Parse safely to avoid timezone shift on YYYY-MM-DD strings
                 const dateObj = new Date(v.dateStr.replace(/-/g, '/'));
-                
-                // Skip Sundays universally (0 = Sunday in JS)
-                if (dateObj.getDay() === 0) return;
-
+                if (dateObj.getDay() === 0) return; // Skip Sundays
                 // Skip April 21, 2026 (San Jacinto Day)
                 if (dateObj.getFullYear() === 2026 && dateObj.getMonth() === 3 && dateObj.getDate() === 21) return;
 
@@ -460,11 +508,9 @@
                 if (!dailyCounts[d]) dailyCounts[d] = { count: 0, timestamp: v.timestamp, date: d, isED: false };
                 dailyCounts[d].count++;
 
-                // Flag if this date is Election Day
                 if (methodStr.includes('ED')) dailyCounts[d].isED = true;
             });
 
-            // Sort dates chronologically
             const sortedDays = Object.values(dailyCounts).sort((a, b) => a.timestamp - b.timestamp);
             
             let runningTotal = 0;
@@ -473,23 +519,18 @@
                 runningTotal += day.count;
                 let isElectionDay = day.isED;
                 
-                // Automatically flag Election Day if there is a gap >= 3 days from the previous voting date
                 if (index > 0 && !isElectionDay) {
                     const gapDays = Math.round((day.timestamp - sortedDays[index-1].timestamp) / 86400000);
                     if (gapDays >= 3) isElectionDay = true;
                 }
 
-                velocityArray.push({
-                    isED: isElectionDay,
-                    date: day.date,
-                    cumulativeTotal: runningTotal
-                });
+                velocityArray.push({ isED: isElectionDay, date: day.date, cumulativeTotal: runningTotal });
             });
             return velocityArray;
         }
 
         function updateDashboard() {
-            // Apply historical scores to current voters
+            // Apply historical scores
             rrVoters.forEach(v => {
                 v.historyScore = historicalVoterMap.has(v.vuid) ? historicalVoterMap.get(v.vuid).size : 0;
             });
@@ -506,23 +547,16 @@
             document.getElementById('kpi-other-pct').innerText = `${((otherCount/total)*100 || 0).toFixed(1)}% of total`;
 
             renderCharts();
-            // Re-apply current search/filter to update table with new scores
-            handleSearch(); 
         }
 
         function renderCharts() {
-            // 1. Daily Chart Data (EV/AV/ED Split)
+            // 1. Daily Chart Data
             const dailyCounts = {};
             const precinctCounts = {};
 
             rrVoters.forEach(v => {
-                // Parse safely to avoid timezone shift on YYYY-MM-DD strings
                 const dateObj = new Date(v.dateStr.replace(/-/g, '/'));
-                
-                // Skip Sundays universally (0 = Sunday in JS)
                 if (dateObj.getDay() === 0) return;
-
-                // Skip April 21, 2026 (San Jacinto Day)
                 if (dateObj.getFullYear() === 2026 && dateObj.getMonth() === 3 && dateObj.getDate() === 21) return;
 
                 const d = v.dateStr || 'Unknown Date';
@@ -532,9 +566,8 @@
                 if (methodStr.includes('EV')) dailyCounts[d].EV++;
                 else if (methodStr.includes('AV') || methodStr.includes('AB')) dailyCounts[d].AV++;
                 else if (methodStr.includes('ED')) dailyCounts[d].ED++;
-                else dailyCounts[d].EV++; // Default to EV if unknown
+                else dailyCounts[d].EV++; 
                 
-                // Tally Precincts
                 precinctCounts[v.precinct] = (precinctCounts[v.precinct] || 0) + 1;
             });
 
@@ -554,6 +587,8 @@
                 }
             });
 
+            const primaryColor = includeSplitPrecincts ? '#6366f1' : '#2563eb'; // Indigo if split included
+
             const ctxDaily = document.getElementById('dailyChart').getContext('2d');
             if (dailyChartInstance) dailyChartInstance.destroy();
             dailyChartInstance = new Chart(ctxDaily, {
@@ -561,7 +596,7 @@
                 data: {
                     labels: currentLabels,
                     datasets: [
-                        { label: 'Early Voters', data: currentEVData, backgroundColor: '#2563eb', borderRadius: 4 },
+                        { label: 'Early Voters', data: currentEVData, backgroundColor: primaryColor, borderRadius: 4 },
                         { label: 'Absentee/Mail', data: currentAVData, backgroundColor: '#f59e0b', borderRadius: 4 },
                         { label: 'Election Day', data: currentEDData, backgroundColor: '#10b981', borderRadius: 4 }
                     ]
@@ -587,10 +622,7 @@
                                     if (isAV) visible += day.AV;
                                     if (isED) visible += day.ED;
                                     if (visible > 0) { 
-                                        fLabels.push(day.date); 
-                                        fEV.push(day.EV); 
-                                        fAV.push(day.AV); 
-                                        fED.push(day.ED); 
+                                        fLabels.push(day.date); fEV.push(day.EV); fAV.push(day.AV); fED.push(day.ED); 
                                     }
                                 });
                                 chart.data.labels = fLabels;
@@ -607,6 +639,7 @@
 
             // 2. Precinct Breakdown Chart
             const sortedPrecincts = Object.entries(precinctCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const precinctColors = sortedPrecincts.map(item => SPLIT_PRECINCTS.includes(item[0]) ? 'rgba(99, 102, 241, 0.8)' : 'rgba(34, 197, 94, 0.8)');
             
             const ctxPrecinct = document.getElementById('precinctChart').getContext('2d');
             if (precinctChartInstance) precinctChartInstance.destroy();
@@ -616,7 +649,7 @@
                     labels: sortedPrecincts.map(item => `Pct ${item[0]}`),
                     datasets: [{
                         data: sortedPrecincts.map(item => item[1]),
-                        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                        backgroundColor: precinctColors,
                         borderRadius: 4
                     }]
                 },
@@ -638,10 +671,9 @@
                 }
             });
 
-            // 3. Velocity Chart (Speed of Votes)
+            // 3. Velocity Chart
             const currentVelocity = calculateCumulativeVelocity(rrVoters);
             
-            // Find maximum Early Voting days required across all datasets
             let maxEVDays = 0;
             const allSeries = [currentVelocity, ...Array.from(historicalVelocityData.values())];
             allSeries.forEach(series => {
@@ -649,22 +681,15 @@
                 if (evCount > maxEVDays) maxEVDays = evCount;
             });
 
-            // Build standard Axis: Day 1...N, ending with Election Day
             const dayLabels = Array.from({length: maxEVDays}, (_, i) => `Day ${i + 1}`);
             dayLabels.push('Election Day');
 
-            // Maps dynamic days strictly to the X-Axis columns to cleanly bridge gap days
             function mapSeriesToData(series) {
                 const data = new Array(maxEVDays + 1).fill(null);
                 let evIndex = 0;
                 series.forEach(p => {
-                    if (p.isED) {
-                        data[maxEVDays] = p.cumulativeTotal; // Anchor strictly to Election Day
-                    } else {
-                        if (evIndex < maxEVDays) {
-                            data[evIndex++] = p.cumulativeTotal;
-                        }
-                    }
+                    if (p.isED) data[maxEVDays] = p.cumulativeTotal; 
+                    else if (evIndex < maxEVDays) data[evIndex++] = p.cumulativeTotal;
                 });
                 return data;
             }
@@ -672,8 +697,8 @@
             const velocityDatasets = [{
                 label: 'Current Election',
                 data: mapSeriesToData(currentVelocity),
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderColor: primaryColor,
+                backgroundColor: includeSplitPrecincts ? 'rgba(99, 102, 241, 0.1)' : 'rgba(37, 99, 235, 0.1)',
                 borderWidth: 3,
                 tension: 0.3,
                 fill: true,
@@ -685,7 +710,7 @@
             let colorIdx = 0;
             historicalVelocityData.forEach((dataArray, elecName) => {
                 velocityDatasets.push({
-                    label: elecName.replace(' GENERAL ELECTION', ''), // Shorten names for legend
+                    label: elecName.replace(' GENERAL ELECTION', ''), 
                     data: mapSeriesToData(dataArray),
                     borderColor: colors[colorIdx % colors.length],
                     borderWidth: 2,
@@ -724,22 +749,20 @@
             let profileLabels = [];
             let profileData = [];
             let profileColors = ['#cbd5e1', '#60a5fa', '#3b82f6', '#1e3a8a', '#172554'];
+            if(includeSplitPrecincts) {
+                 profileColors = ['#cbd5e1', '#818cf8', '#6366f1', '#4338ca', '#312e81']; // Shift to indigo palette
+            }
 
             if (maxElections === 0) {
-                profileLabels = ['New / 0 Past'];
-                profileData = [counts[0]];
+                profileLabels = ['New / 0 Past']; profileData = [counts[0]];
             } else if (maxElections === 1) {
-                profileLabels = ['New / 0 Past', '1 Past Election'];
-                profileData = [counts[0], counts[1]];
+                profileLabels = ['New / 0 Past', '1 Past Election']; profileData = [counts[0], counts[1]];
             } else if (maxElections === 2) {
-                profileLabels = ['New / 0 Past', '1 Past Election', '2 Past Elections'];
-                profileData = [counts[0], counts[1], counts[2]];
+                profileLabels = ['New / 0 Past', '1 Past Election', '2 Past Elections']; profileData = [counts[0], counts[1], counts[2]];
             } else if (maxElections === 3) {
-                profileLabels = ['New / 0 Past', '1 Past Election', '2 Past Elections', '3 Past Elections'];
-                profileData = [counts[0], counts[1], counts[2], counts[3]];
+                profileLabels = ['New / 0 Past', '1 Past Election', '2 Past Elections', '3 Past Elections']; profileData = [counts[0], counts[1], counts[2], counts[3]];
             } else {
-                profileLabels = ['New / 0 Past', '1 Past Election', '2 Past Elections', '3+ Past Elections'];
-                profileData = [counts[0], counts[1], counts[2], counts[3] + counts['3plus']];
+                profileLabels = ['New / 0 Past', '1 Past Election', '2 Past Elections', '3+ Past Elections']; profileData = [counts[0], counts[1], counts[2], counts[3] + counts['3plus']];
             }
 
             const ctxProfile = document.getElementById('historyProfileChart').getContext('2d');
@@ -748,29 +771,21 @@
                 type: 'doughnut',
                 data: {
                     labels: profileLabels,
-                    datasets: [{
-                        data: profileData,
-                        backgroundColor: profileColors.slice(0, profileData.length),
-                        borderWidth: 0
-                    }]
+                    datasets: [{ data: profileData, backgroundColor: profileColors.slice(0, profileData.length), borderWidth: 0 }]
                 },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
-                    cutout: '65%',
+                    responsive: true, maintainAspectRatio: false, cutout: '65%',
                     plugins: { 
                         legend: { position: 'right', labels: { boxWidth: 12 } },
                         datalabels: {
-                            color: '#000000',
-                            font: { weight: 'bold', size: 14 },
+                            color: '#000000', font: { weight: 'bold', size: 14 },
                             formatter: (value, ctx) => {
                                 let sum = 0;
-                                let dataArr = ctx.chart.data.datasets[0].data;
-                                dataArr.forEach(data => { sum += data; });
+                                ctx.chart.data.datasets[0].data.forEach(data => { sum += data; });
                                 if (value === 0 || sum === 0) return null;
                                 return (value * 100 / sum).toFixed(1) + "%";
                             },
-                            textStrokeColor: '#ffffff',
-                            textStrokeWidth: 2
+                            textStrokeColor: '#ffffff', textStrokeWidth: 2
                         }
                     }
                 }
@@ -795,7 +810,6 @@
                         mapLink = `https://www.wilcotx.gov/DocumentCenter/View/${docId}/177pcts_2026_mapbook_8_5x11_${voter.precinct}`;
                     }
 
-                    // Create History Badge
                     let histBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">0</span>`;
                     if(voter.historyScore > 0) {
                         histBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">${voter.historyScore}</span>`;
@@ -822,18 +836,15 @@
 
         function handleSearch() {
             const rawTerm = document.getElementById('searchInput').value.toLowerCase().trim();
-            // Replace commas with spaces, then split into individual search words
             const searchTerms = rawTerm.replace(/,/g, ' ').split(/\s+/).filter(t => t.length > 0);
             
             filteredVoters = rrVoters.filter(v => {
                 const safeName = (v.name || '').toLowerCase().replace(/,/g, ' ');
                 const safeVuid = (v.vuid || '').toLowerCase();
                 
-                // A voter matches if EVERY typed word is found somewhere in their name or VUID
                 const matchesSearch = searchTerms.length === 0 || searchTerms.every(term => 
                     safeName.includes(term) || safeVuid.includes(term)
                 );
-                
                 const matchesPrecinct = selectedPrecincts.has(String(v.precinct).trim());
 
                 return matchesSearch && matchesPrecinct;
@@ -859,7 +870,9 @@
             if(!container) return;
             container.innerHTML = '';
             
-            RR_PRECINCTS.forEach(p => {
+            const activePrecincts = includeSplitPrecincts ? [...RR_PRECINCTS, ...SPLIT_PRECINCTS] : [...RR_PRECINCTS];
+
+            activePrecincts.forEach(p => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 cursor-pointer';
                 const checkbox = document.createElement('input');
@@ -871,15 +884,18 @@
                     updateFilterButtonText();
                     handleSearch(); 
                 };
+                
                 label.appendChild(checkbox);
-                label.appendChild(document.createTextNode('Precinct ' + p));
+                const isSplitTag = SPLIT_PRECINCTS.includes(p) ? ' (Split)' : '';
+                label.appendChild(document.createTextNode('Pct ' + p + isSplitTag));
                 container.appendChild(label);
             });
             updateFilterButtonText();
         }
 
         function selectAllPrecincts(selectAll) {
-            selectAll ? RR_PRECINCTS.forEach(p => selectedPrecincts.add(p)) : selectedPrecincts.clear();
+            const activePrecincts = includeSplitPrecincts ? [...RR_PRECINCTS, ...SPLIT_PRECINCTS] : [...RR_PRECINCTS];
+            selectAll ? activePrecincts.forEach(p => selectedPrecincts.add(p)) : selectedPrecincts.clear();
             renderPrecinctFilters();
             handleSearch();
         }
@@ -887,8 +903,9 @@
         function updateFilterButtonText() {
             const btn = document.getElementById('precinct-menu-button');
             if(!btn) return;
+            const activeCount = includeSplitPrecincts ? RR_PRECINCTS.length + SPLIT_PRECINCTS.length : RR_PRECINCTS.length;
             let text = selectedPrecincts.size === 0 ? "0 Selected" : 
-                       selectedPrecincts.size < RR_PRECINCTS.length ? `${selectedPrecincts.size} Selected` : "Filter Precincts";
+                       selectedPrecincts.size < activeCount ? `${selectedPrecincts.size} Selected` : "Filter Precincts";
             
             btn.innerHTML = `${text} <svg class="-mr-1 ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`;
         }
@@ -903,10 +920,8 @@
                 let valA = a[currentSortCol];
                 let valB = b[currentSortCol];
 
-                // Numeric sort
                 if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') {
-                    valA = Number(valA);
-                    valB = Number(valB);
+                    valA = Number(valA); valB = Number(valB);
                 } else {
                     if (typeof valA === 'string') valA = valA.toLowerCase();
                     if (typeof valB === 'string') valB = valB.toLowerCase();
@@ -924,7 +939,7 @@
 
         function sortData(col) {
             if (currentSortCol === col) currentSortAsc = !currentSortAsc;
-            else { currentSortCol = col; currentSortAsc = (col !== 'historyScore'); } // Default descending for history
+            else { currentSortCol = col; currentSortAsc = (col !== 'historyScore'); } 
             applySort();
         }
 
